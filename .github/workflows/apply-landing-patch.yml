@@ -1,0 +1,36 @@
+name: Apply Costacciaro landing patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/patch_landing.py'
+      - '.github/workflows/apply-landing-patch.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch landing preserving original artwork
+        run: python scripts/patch_landing.py
+
+      - name: Commit updated landing
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No landing changes required"
+            exit 0
+          fi
+          git config user.name "Costacciaro 2026 automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git commit -m "Ripristina landing originale e aggiorna ruoli volontari"
+          git push
