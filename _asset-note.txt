@@ -1,0 +1,1 @@
+Asset binari caricati via Git e usati localmente dalla landing.
