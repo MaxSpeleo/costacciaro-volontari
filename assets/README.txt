@@ -1,1 +1,0 @@
-Asset grafici locali della landing Costacciaro 2026.

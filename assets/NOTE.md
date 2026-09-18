@@ -1,1 +1,0 @@
-Gli asset definitivi verranno inseriti nel repository per rendere la demo indipendente da sorgenti esterne.
