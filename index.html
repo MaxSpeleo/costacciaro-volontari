@@ -60,25 +60,21 @@ scrolling="no">
   const iframe = document.getElementById('JotFormIFrame-262626283156359');
   if (!iframe) return;
 
-  function clampAfterSubmit() {
-    iframe.style.height = '430px';
-    iframe.style.minHeight = '430px';
-    iframe.setAttribute('scrolling','no');
+  function centerThankYou() {
+    const top = iframe.getBoundingClientRect().top + window.scrollY;
+    const target = top - Math.round(window.innerHeight * 0.22);
+    window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
   }
 
   window.addEventListener('message', function(event) {
     if (!event.origin || !event.origin.includes('jotform.com')) return;
 
     const raw = event.data;
-    const text = typeof raw === 'string' ? raw : JSON.stringify(raw || {});
+    const message = typeof raw === 'string' ? raw : JSON.stringify(raw || {});
 
-    if (
-      text.includes('submission-completed') ||
-      text.includes('thank') ||
-      text.includes('success')
-    ) {
-      setTimeout(clampAfterSubmit, 250);
-      setTimeout(clampAfterSubmit, 900);
+    if (message.includes('submission-completed')) {
+      setTimeout(centerThankYou, 250);
+      setTimeout(centerThankYou, 900);
     }
   });
 })();
