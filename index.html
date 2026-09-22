@@ -55,6 +55,21 @@ scrolling="no">
 </iframe>
 <script src="https://cdn.jotfor.ms/s/umd/latest/for-form-embed-handler.js"></script>
 <script>window.jotformEmbedHandler("iframe[id='JotFormIFrame-262626283156359']", "https://form.jotform.com/");</script>
+<script>
+window.addEventListener('message', function(event) {
+  if (!event.origin || !event.origin.includes('jotform.com')) return;
+  const data = event.data;
+  if (data && typeof data === 'object' && data.action === 'submission-completed' && String(data.formID) === '262626283156359') {
+    const iframe = document.getElementById('JotFormIFrame-262626283156359');
+    const formSection = document.getElementById('form');
+    if (!iframe) return;
+    setTimeout(function() {
+      iframe.style.height = '980px';
+      if (formSection) formSection.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 150);
+  }
+});
+</script>
 <noscript><p><a href="https://form.jotform.com/262626283156359">Apri il modulo Jotform</a></p></noscript></div></section>
 <script>
 const needs=[
