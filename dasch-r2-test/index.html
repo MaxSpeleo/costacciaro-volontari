@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Costacciaro 2026 — DASCH R2 TEST</title>
+<style>
+:root{--bg:#101010;--panel:#181818;--soft:#222;--text:#f5f1eb;--muted:#b9b0a8;--accent:#c76476;--ok:#2f9e72;--warn:#d59643;--line:#743744}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+body.light{--bg:#f4efe8;--panel:#fff;--soft:#f2ece6;--text:#211d1d;--muted:#6e6660;--line:#caaab1}
+button,select,input{font:inherit}.wrap{max-width:1500px;margin:auto;padding:14px}.header{display:flex;gap:16px;align-items:flex-start;justify-content:space-between;border-bottom:2px solid var(--accent);padding-bottom:14px;flex-wrap:wrap}
+.brand{display:flex;gap:12px;align-items:center}.logo{font-weight:900;font-size:18px;line-height:.92;color:var(--accent);border:2px solid var(--accent);padding:9px 11px}.title{font-weight:900;font-size:clamp(20px,4vw,40px);text-transform:uppercase;line-height:.95}.sub{font-size:12px;color:var(--muted);margin-top:5px}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{min-height:42px;border:2px solid var(--accent);background:transparent;color:var(--text);font-weight:800;padding:8px 11px;cursor:pointer}.btn.primary{background:var(--accent);color:#fff}.btn.ok{border-color:var(--ok)}.mode{margin-top:12px;padding:10px 12px;border:2px solid #c58b35;background:#3a2b12;color:#ffd797;font-weight:800;font-size:12px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.kpi{border:2px solid var(--line);background:var(--panel);padding:11px}.kpi small{color:var(--muted);text-transform:uppercase;font-weight:800}.kpi b{display:block;font-size:26px;margin-top:3px}.priority{margin-top:10px;border:2px solid var(--accent);background:rgba(199,100,118,.1);padding:12px}.priority h2{font-size:17px;text-transform:uppercase;margin:0 0 10px}.priority-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.cardbtn{background:var(--panel);border:1px solid var(--line);color:var(--text);text-align:left;padding:12px;cursor:pointer;min-height:74px}.cardbtn b{display:block}.cardbtn span{font-size:11px;color:var(--muted)}
+.tabs{display:none;position:sticky;top:0;z-index:8;background:var(--bg);grid-template-columns:repeat(4,1fr);border:2px solid var(--accent);margin-top:10px}.tab{border:0;background:transparent;color:var(--text);font-weight:900;font-size:11px;padding:12px 3px}.tab.active{background:var(--accent);color:#fff}
+.main{display:grid;grid-template-columns:.95fr 1.2fr 1.05fr;gap:10px;margin-top:10px}.panel{border:2px solid var(--line);background:var(--panel);padding:12px;min-width:0}.panel h3{margin:0 0 9px;text-transform:uppercase;font-size:15px}.row{display:grid;grid-template-columns:1fr 1fr;gap:7px}.field label{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;font-weight:800;margin-bottom:4px}.field select,.field input{width:100%;min-height:39px;background:var(--soft);border:1px solid var(--line);color:var(--text);padding:8px}.people{display:grid;gap:7px}.person{border:1px solid var(--line);background:var(--soft);padding:9px;cursor:pointer}.person.selected{border-color:var(--ok);outline:1px solid var(--ok)}.person b{font-size:13px}.status{display:block;margin-top:4px;font-size:10px;font-weight:900;text-transform:uppercase;color:var(--muted)}.status.busy{color:var(--accent)}.teamhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.teamlist{margin-top:10px;display:grid;gap:6px}.member{border:1px solid var(--line);padding:7px 9px;background:var(--soft);font-size:12px}.cover{margin-top:10px;font-weight:900}.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:30;background:#123c2c;border:2px solid var(--ok);color:#fff;padding:11px 14px;width:min(92vw,700px);font-weight:700;display:none}.modal{position:fixed;inset:0;background:#000a;z-index:40;display:none;align-items:center;justify-content:center;padding:16px}.modalbox{width:min(520px,100%);background:var(--panel);border:2px solid var(--accent);padding:18px}.modalbox h2{margin-top:0}.help{font-size:12px;color:var(--muted);line-height:1.45}.muted{color:var(--muted);font-size:12px}
+@media(max-width:900px){.grid4{grid-template-columns:repeat(2,1fr)}.priority-grid{grid-template-columns:1fr}.tabs{display:grid}.main{display:block}.panel{display:none;margin-top:9px}.panel.show{display:block}.actions{width:100%}.btn{flex:1}.logo{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div class="brand"><div class="logo">COSTACCIARO<br>2026</div><div><div class="title">Dashboard Controllo</div><div class="sub">Gestione volontari · R2 UX / Human Factors</div></div></div>
+    <div class="actions"><button class="btn" onclick="openHelp()">? Aiuto</button><button class="btn" onclick="document.body.classList.toggle('light')">Chiaro/Scuro</button></div>
+  </header>
+  <div class="mode">PROVE TECNICHE · DATI FITTIZI · NESSUN BACKEND · NESSUN DATO REALE</div>
+
+  <section class="grid4">
+    <div class="kpi"><small>Totali</small><b>50</b></div>
+    <div class="kpi"><small>Disponibili</small><b id="availableKpi">18</b></div>
+    <div class="kpi"><small>Assegnati</small><b id="assignedKpi">32</b></div>
+    <div class="kpi"><small>Copertura ⓘ</small><b id="coverageKpi">72%</b></div>
+  </section>
+
+  <section class="priority">
+    <h2>⚠ Cosa richiede attenzione</h2>
+    <div class="priority-grid">
+      <button class="cardbtn" onclick="goTab('turno')"><b>4 turni da coprire</b><span>Tocca per aprire il primo turno incompleto</span></button>
+      <button class="cardbtn" onclick="goTab('persone')"><b>9 disponibili non assegnati</b><span>Vedi chi può essere utilizzato</span></button>
+      <button class="cardbtn" onclick="goTab('quadro')"><b>7 posti ancora scoperti</b><span>Rivedi il quadro complessivo</span></button>
+    </div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="quadro" onclick="goTab('quadro')">1 Quadro</button>
+    <button class="tab" data-tab="turno" onclick="goTab('turno')">2 Turno</button>
+    <button class="tab" data-tab="persone" onclick="goTab('persone')">3 Persone</button>
+    <button class="tab" data-tab="squadra" onclick="goTab('squadra')">4 Squadra</button>
+  </nav>
+
+  <main class="main">
+    <section class="panel show" data-panel="quadro">
+      <h3>Turno selezionato</h3>
+      <div class="row"><div class="field"><label>Data</label><select id="day"><option>29 ottobre</option><option>30 ottobre</option><option>31 ottobre</option><option>1 novembre</option></select></div><div class="field"><label>Fascia</label><select id="slot"><option>Mattina</option><option>Pomeriggio</option><option>Sera</option></select></div></div>
+      <div class="field" style="margin-top:7px"><label>Attività</label><select id="activity"><option>Accoglienza</option><option>Logistica</option><option>Conferenze</option><option>Allestimento</option></select></div>
+      <p class="muted">Stavi lavorando su: <b id="contextLabel">29 ottobre · Mattina · Accoglienza</b></p>
+      <button class="btn primary" onclick="goTab('persone')">Trova persone disponibili</button>
+    </section>
+
+    <section class="panel" data-panel="persone">
+      <div class="teamhead"><div><h3>Persone disponibili</h3><div class="muted">Compatibili con il turno selezionato.</div></div><button class="btn primary" onclick="suggest()">Proponi persone</button></div>
+      <div class="people" id="people"></div>
+    </section>
+
+    <section class="panel" data-panel="squadra">
+      <div class="teamhead"><div><div class="muted">Squadra del turno</div><h3 id="teamTitle">Accoglienza</h3></div><div><button class="btn" id="editBtn" onclick="toggleEdit()">Modifica turno</button> <button class="btn ok" id="pinBtn" onclick="togglePin()">Fissa squadra</button></div></div>
+      <div class="row" style="margin-top:8px"><div class="field"><label>Persone necessarie</label><input id="target" type="number" value="4" disabled></div><div class="field"><label>Punto operativo</label><input id="place" value="Ingresso principale" disabled></div></div>
+      <div class="teamlist" id="teamlist"></div><div class="cover" id="cover">Copertura: 2/4</div>
+    </section>
+
+    <section class="panel" data-panel="turno">
+      <h3>Stato del turno</h3>
+      <div class="kpi"><small>Accoglienza · 29 ottobre · Mattina</small><b>2/4</b></div>
+      <p class="help">Mancano 2 persone. Il sistema evidenzia subito la criticità e porta direttamente alla lista di persone disponibili.</p>
+      <button class="btn primary" onclick="goTab('persone')">Completa il turno</button>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="modal" id="modal" onclick="if(event.target===this)closeHelp()"><div class="modalbox"><h2>Come usare la dashboard</h2><p class="help">Parti da <b>Cosa richiede attenzione</b>. Scegli il turno, controlla le persone disponibili e verifica la squadra. Questa copia è solo per test di usabilità: usa dati fittizi e non salva nulla su Costacciaro.</p><button class="btn primary" onclick="closeHelp()">Ho capito</button></div></div>
+<script>
+const volunteers=[
+{id:'v1',name:'Anna Rossi',group:'CAI Perugia',status:'DISPONIBILE'},
+{id:'v2',name:'Luca Bianchi',group:'GS Trieste',status:'DISPONIBILE'},
+{id:'v3',name:'Marta Neri',group:'SSI',status:'IMPEGNATO IN ALTRA FASCIA'},
+{id:'v4',name:'Paolo Verdi',group:'CNSAS',status:'OCCUPATO IN QUESTO ORARIO'},
+{id:'v5',name:'Giulia Costa',group:'GSPGC',status:'DISPONIBILE'},
+{id:'v6',name:'Marco Blu',group:'Speleo Club',status:'DISPONIBILE'}];
+let team=new Set(['v1','v2']);let pinned=false,editing=false;
+const qs=id=>document.getElementById(id);
+function toast(t){qs('toast').textContent=t;qs('toast').style.display='block';setTimeout(()=>qs('toast').style.display='none',2200)}
+function renderPeople(){qs('people').innerHTML=volunteers.map(v=>'<div class="person '+(team.has(v.id)?'selected':'')+'" onclick="togglePerson(\''+v.id+'\')"><b>'+v.name+'</b> · '+v.group+'<span class="status '+(v.status.includes('OCCUPATO')?'busy':'')+'">'+(team.has(v.id)?'GIÀ ASSEGNATO QUI':v.status)+'</span></div>').join('')}
+function renderTeam(){const members=volunteers.filter(v=>team.has(v.id));qs('teamlist').innerHTML=members.map(v=>'<div class="member">✓ '+v.name+' · '+v.group+'</div>').join('')||'<div class="muted">Nessuna persona assegnata</div>';qs('cover').textContent='Copertura: '+members.length+'/'+qs('target').value;qs('coverageKpi').textContent=Math.min(100,Math.round(members.length/Number(qs('target').value)*100))+'%'}
+function togglePerson(id){const v=volunteers.find(x=>x.id===id);if(v.status==='OCCUPATO IN QUESTO ORARIO'&&!team.has(id)){if(!confirm(v.name+' è già occupato nello stesso orario. Vuoi spostarlo qui?')){toast('⚠ Operazione annullata');return}}if(team.has(id)){team.delete(id);toast('✓ '+v.name+' rimosso dalla squadra')}else{team.add(id);toast('✓ '+v.name+' assegnato al turno')}renderPeople();renderTeam()}
+function suggest(){['v5','v6'].forEach(id=>team.add(id));renderPeople();renderTeam();toast('✓ Proposte 2 persone compatibili. Controlla la squadra prima di fissarla.')}
+function togglePin(){pinned=!pinned;qs('pinBtn').textContent=pinned?'✓ Squadra fissata':'Fissa squadra';toast(pinned?'✓ Squadra fissata come riferimento':'Squadra sbloccata')}
+function toggleEdit(){editing=!editing;qs('target').disabled=!editing;qs('place').disabled=!editing;qs('editBtn').textContent=editing?'Fine modifica':'Modifica turno'}
+function openHelp(){qs('modal').style.display='flex'}function closeHelp(){qs('modal').style.display='none';localStorage.setItem('dasch-help-seen','1')}
+function goTab(tab){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('[data-panel]').forEach(p=>p.classList.toggle('show',p.dataset.panel===tab));localStorage.setItem('dasch-tab',tab)}
+function context(){const t=qs('day').value+' · '+qs('slot').value+' · '+qs('activity').value;qs('contextLabel').textContent=t;qs('teamTitle').textContent=qs('activity').value;localStorage.setItem('dasch-context',JSON.stringify({day:qs('day').value,slot:qs('slot').value,activity:qs('activity').value}))}
+['day','slot','activity'].forEach(id=>qs(id).addEventListener('change',context));qs('target').addEventListener('input',renderTeam);
+try{const c=JSON.parse(localStorage.getItem('dasch-context')||'{}');if(c.day)qs('day').value=c.day;if(c.slot)qs('slot').value=c.slot;if(c.activity)qs('activity').value=c.activity}catch{}
+context();renderPeople();renderTeam();goTab(localStorage.getItem('dasch-tab')||'quadro');if(!localStorage.getItem('dasch-help-seen'))openHelp();
+</script>
+</body>
+</html>
