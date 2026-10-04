@@ -23,7 +23,6 @@ import {
   Sun,
 } from "lucide-react";
 
-const officialLogo = { url: "/logo.png" };
 import { supabase } from "@/lib/supabase";
 import { loadOperationalDashboard, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard } from "@/lib/dashboard-operational";
 
@@ -1719,12 +1718,11 @@ function OrganizzatoriDashboard() {
         <header className="mb-4 border-b-2 border-[#b85668] pb-3 sm:mb-5 lg:mb-6 lg:pb-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-center gap-2 sm:items-start sm:gap-3">
-              <div className="flex h-14 w-28 shrink-0 items-center justify-start overflow-hidden sm:h-24 sm:w-48 lg:h-28 lg:w-56">
-                <img
-                  src={officialLogo.url}
-                  alt="Costacciaro 2026"
-                  className="h-full w-full object-contain object-left [filter:brightness(0)_saturate(100%)_invert(21%)_sepia(95%)_saturate(4162%)_hue-rotate(342deg)_brightness(96%)_contrast(95%)]"
-                />
+              <div className="flex h-14 w-28 shrink-0 items-center justify-start sm:h-24 sm:w-48 lg:h-28 lg:w-56">
+                <div className="font-black uppercase leading-none text-[#e7254b]">
+                  <span className="block text-lg sm:text-3xl">Costacciaro</span>
+                  <span className="block text-2xl sm:text-5xl">2026</span>
+                </div>
               </div>
               <div className="min-w-0">
                 <h1 className="mt-1 text-lg font-black uppercase leading-[0.95] sm:text-2xl lg:text-4xl">
