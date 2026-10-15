@@ -1173,9 +1173,7 @@ function OrganizzatoriDashboard() {
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
   const [personalQuery, setPersonalQuery] = useState("");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
-  const [sessionEmail, setSessionEmail] = useState("");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authMessage, setAuthMessage] = useState("");
+  const openAccess = true;
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
   const [liveSyncLabel, setLiveSyncLabel] = useState("");
@@ -1256,18 +1254,6 @@ function OrganizzatoriDashboard() {
   }, [helpTopic]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSessionEmail(data.session?.user.email ?? ""));
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionEmail(session?.user.email ?? "");
-      if (!session) {
-        liveHydrated.current = false;
-        setLiveVolunteers([]);
-      }
-    });
-    return () => data.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
     if (dataMode === "test") localStorage.setItem("costacciaro-test-activities", JSON.stringify(activities));
   }, [activities, dataMode]);
   useEffect(() => {
@@ -1275,7 +1261,7 @@ function OrganizzatoriDashboard() {
   }, [teams, dataMode]);
 
   useEffect(() => {
-    if (dataMode !== "live" || !sessionEmail) return;
+    if (dataMode !== "live" || !openAccess) return;
     let cancelled = false;
     setLiveLoading(true);
     setLiveError("");
@@ -1300,10 +1286,10 @@ function OrganizzatoriDashboard() {
       })
       .finally(() => { if (!cancelled) setLiveLoading(false); });
     return () => { cancelled = true; };
-  }, [dataMode, sessionEmail]);
+  }, [dataMode]);
 
   useEffect(() => {
-    if (dataMode !== "live" || !sessionEmail) return;
+    if (dataMode !== "live" || !openAccess) return;
     let refreshTimer: number | undefined;
     return subscribeOperationalDashboard(() => {
       window.clearTimeout(refreshTimer);
@@ -1321,10 +1307,10 @@ function OrganizzatoriDashboard() {
           .catch(() => setLiveError("Aggiornamento in tempo reale non riuscito."));
       }, 150);
     });
-  }, [dataMode, sessionEmail]);
+  }, [dataMode]);
 
   useEffect(() => {
-    if (dataMode !== "live" || !sessionEmail || !liveHydrated.current) return;
+    if (dataMode !== "live" || !openAccess || !liveHydrated.current) return;
     const snapshot = JSON.stringify(teams);
     if (snapshot === lastTeamsSnapshot.current) return;
     setLiveSyncLabel("Salvataggio…");
@@ -1341,10 +1327,10 @@ function OrganizzatoriDashboard() {
         });
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [teams, dataMode, sessionEmail]);
+  }, [teams, dataMode]);
 
   useEffect(() => {
-    if (dataMode !== "live" || !sessionEmail || !liveHydrated.current) return;
+    if (dataMode !== "live" || !openAccess || !liveHydrated.current) return;
     const snapshot = JSON.stringify(activities);
     if (snapshot === lastActivitiesSnapshot.current) return;
     setLiveSyncLabel("Salvataggio…");
@@ -1361,7 +1347,7 @@ function OrganizzatoriDashboard() {
         });
     }, 350);
     return () => window.clearTimeout(timer);
-  }, [activities, dataMode, sessionEmail]);
+  }, [activities, dataMode]);
 
   const activeVolunteers = dataMode === "test" ? demoVolunteers.slice(0, testSize) : liveVolunteers;
 
@@ -1399,27 +1385,6 @@ function OrganizzatoriDashboard() {
     localStorage.removeItem("costacciaro-test-activities");
     localStorage.removeItem("costacciaro-test-teams");
   }
-
-  async function requestOrganizerAccess() {
-    const email = authEmail.trim().toLowerCase();
-    if (!email) return;
-    setAuthMessage("Invio accesso in corso…");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/organizzatori` },
-    });
-    setAuthMessage(error ? "Invio non riuscito." : "Controlla la tua email e apri il link di accesso.");
-  }
-
-  async function signOutOrganizer() {
-    await supabase.auth.signOut();
-    liveHydrated.current = false;
-    setLiveVolunteers([]);
-    setTeams(initialTeams.map((team) => ({ ...team, memberIds: [] })));
-    setActivities(["Accoglienza", "Logistica", "Conferenze", "Allestimento"]);
-    setLiveError("");
-  }
-
 
   const macroActivities = activities.filter((item) => !item.includes(" — "));
 
@@ -1629,7 +1594,7 @@ function OrganizzatoriDashboard() {
   }
 
   function updateVolunteerOpsLocal(id: string, patch: Partial<Pick<Volunteer, "status" | "confirmed" | "priority" | "internalNotes" | "tags">>) {
-    if (dataMode !== "live" || !sessionEmail) return;
+    if (dataMode !== "live" || !openAccess) return;
     setLiveVolunteers((current) => current.map((volunteer) =>
       volunteer.id === id ? { ...volunteer, ...patch } : volunteer
     ));
@@ -2075,21 +2040,10 @@ function OrganizzatoriDashboard() {
           ) : (
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">MODALITÀ OPERATIVA — archivio centrale protetto · {liveLoading ? "caricamento…" : `${liveVolunteers.length} volontari reali`}<button type="button" onClick={() => setHelpTopic("live")} className="rounded-full p-1" aria-label="Spiega modalità operativa"><CircleHelp className="size-4" /></button></div>
-              {sessionEmail ? (
-                <div className="flex flex-wrap items-center gap-2 font-medium">
-                  <span>Accesso: {sessionEmail}</span>
-                  <button type="button" onClick={signOutOrganizer} className="border border-current px-2 py-1 font-black uppercase">Esci</button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)}
-                    placeholder="Email organizzatore autorizzato" className={`min-h-11 flex-1 border-2 px-3 ${input}`} />
-                  <button type="button" onClick={requestOrganizerAccess}
-                    className="min-h-11 border-2 border-emerald-600 bg-emerald-600 px-4 font-black uppercase text-white">Invia link di accesso</button>
-                </div>
-              )}
-              {sessionEmail && liveSyncLabel ? <div className="font-medium">Sincronizzazione: {liveSyncLabel}</div> : null}
-              {authMessage ? <div className="font-medium">{authMessage}</div> : null}
+              <div className="flex flex-wrap items-center gap-2 font-medium">
+                <span>Ingresso libero — verifica credenziali sospesa</span>
+              </div>
+              {liveSyncLabel ? <div className="font-medium">Sincronizzazione: {liveSyncLabel}</div> : null}
               {liveError ? <div className="font-black text-[#c76476]">{liveError}</div> : null}
             </div>
           )}
