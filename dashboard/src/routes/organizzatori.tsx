@@ -1529,6 +1529,7 @@ function OrganizzatoriDashboard() {
   const shiftSummary = teams
     .filter((team) => team.day === day)
     .map((team) => ({ activity: team.activity, slot: team.slot, assigned: team.memberIds.filter((id) => activeVolunteerIds.has(id)).length, target: team.target }));
+  const currentShiftSummary = shiftSummary.filter((item) => item.slot === slot);
   const uncoveredPlaces = shiftSummary.reduce((sum, item) => sum + Math.max(0, item.target - item.assigned), 0);
   const underCoveredTeams = teams.filter((team) =>
     team.day === day && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target
@@ -2104,7 +2105,15 @@ function OrganizzatoriDashboard() {
           )}
         </section>
 
-        <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+        <nav className={`mb-3 hidden grid-cols-5 gap-2 lg:grid`}>
+          <button type="button" onClick={() => goToSection("places-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Sale e presidi</button>
+          <button type="button" onClick={() => goToSection("priorities-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Priorità</button>
+          <button type="button" onClick={() => goToSection("coverage-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Regia turno</button>
+          <button type="button" onClick={() => goToSection("turno-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Turno selezionato</button>
+          <button type="button" onClick={() => goToSection("people-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Persone</button>
+        </nav>
+
+        <section id="places-workspace" className={`mb-3 scroll-mt-4 border-2 p-3 lg:p-5 ${panel}`}>
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Sale e presidi</p>
@@ -2151,13 +2160,13 @@ function OrganizzatoriDashboard() {
         </section>
 
         <section className="grid grid-cols-4 gap-1.5 lg:gap-3">
-          <Kpi label="Totali" value={String(activeVolunteers.length)} light={isLight} />
-          <Kpi label="Disponibili" value={String(compatible.length)} light={isLight} />
-          <Kpi label="Assegnati" value={String(teamMembers.length)} light={isLight} />
-          <Kpi label="Copertura" value={coverageLabel} light={isLight} onHelp={() => setHelpTopic("coverage")} />
+          <Kpi label="Volontari" value={String(activeVolunteers.length)} light={isLight} />
+          <Kpi label="Compatibili ora" value={String(compatible.length)} light={isLight} />
+          <Kpi label="Assegnati qui" value={String(teamMembers.length)} light={isLight} />
+          <Kpi label="Copertura turno" value={coverageLabel} light={isLight} onHelp={() => setHelpTopic("coverage")} />
         </section>
 
-        <section className={`mt-3 border-2 p-3 lg:mt-4 lg:p-4 ${underCoveredTeams.length ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"}`}>
+        <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${underCoveredTeams.length ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"}`}>
           <div className="flex items-center gap-2">
             {underCoveredTeams.length ? <AlertTriangle className="size-5 text-[#c76476]" /> : <CheckCircle2 className="size-5 text-emerald-600" />}
             <div>
@@ -2216,6 +2225,7 @@ function OrganizzatoriDashboard() {
               <div>
                 <div className="flex items-center gap-1"><p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Regia del turno</p><button type="button" onClick={() => setHelpTopic("regia")} aria-label="Spiega regia del turno" className="rounded-full p-1"><CircleHelp className="size-4" /></button></div>
                 <h2 className="mt-1 text-lg font-black uppercase lg:text-2xl">{day || "Tutte le date"} · {slot || "Tutte le fasce"}</h2>
+                <p className={`mt-1 text-[10px] sm:text-xs ${muted}`}>Qui vedi solo i punti operativi della fascia selezionata. Il quadro giornaliero completo resta nella sezione successiva.</p>
               </div>
               <div className={`text-xs font-bold ${mutedStrong}`}>{availableUnassignedCount} disponibili non assegnati</div>
             </div>
@@ -2226,7 +2236,7 @@ function OrganizzatoriDashboard() {
             </div>
             <p className={`mt-2 text-[10px] sm:text-xs ${muted}`}>1. Scegli data e fascia. 2. Tocca l’attività da gestire: si apre direttamente il turno corretto.</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              {shiftSummary.map((item) => {
+              {currentShiftSummary.map((item) => {
                 const targetDefined = item.target > 0;
                 const pct = targetDefined ? Math.min(100, Math.round((item.assigned / item.target) * 100)) : 0;
                 const complete = targetDefined && item.assigned >= item.target;
@@ -2246,7 +2256,7 @@ function OrganizzatoriDashboard() {
             </div>
             <div className={`mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-[10px] sm:text-xs ${isLight ? "border-ink/10" : "border-paper/10"}`}>
               <strong>Da sistemare</strong>
-              <span className="text-[#c76476]">{shiftSummary.filter((x) => x.assigned < x.target).length} turni sotto copertura</span>
+              <span className="text-[#c76476]">{currentShiftSummary.filter((x) => x.target > 0 && x.assigned < x.target).length} turni sotto copertura nella fascia</span>
               <span>{availableUnassignedCount} disponibili non assegnati</span>
               <span>{uncoveredPlaces} posti ancora da coprire</span>
             </div>
