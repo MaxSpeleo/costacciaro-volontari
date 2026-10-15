@@ -69,6 +69,31 @@ type Team = {
   pinned: boolean;
 };
 
+type OperationalPoint = {
+  id: string;
+  name: string;
+  kind: "sala" | "presidio";
+  activity: string;
+  note: string;
+};
+
+const operationalPoints: OperationalPoint[] = [
+  {
+    id: "teatro-tenda",
+    name: "Teatro Tenda",
+    kind: "sala",
+    activity: "Conferenze — Teatro Tenda",
+    note: "Copertura della sala per fascia: la squadra segue lo spazio, non il singolo intervento.",
+  },
+  {
+    id: "segreteria-iscrizioni",
+    name: "Segreteria / iscrizioni in loco",
+    kind: "presidio",
+    activity: "Accoglienza — Segreteria e iscrizioni",
+    note: "Iscrizioni sul posto, accoglienza e consegna dei materiali previsti dall’organizzazione.",
+  },
+];
+
 const demoVolunteers: Volunteer[] = [
   {
     "id": "v1",
@@ -1386,6 +1411,36 @@ function OrganizzatoriDashboard() {
     localStorage.removeItem("costacciaro-test-teams");
   }
 
+  function openOperationalPoint(point: OperationalPoint) {
+    const existing = teams.find((team) =>
+      team.day === day && team.slot === slot && team.activity === point.activity
+    );
+
+    if (!activities.includes(point.activity)) {
+      setActivities((current) => [...current, point.activity]);
+    }
+
+    if (!existing) {
+      setTeams((current) => [...current, {
+        id: `point-${point.id}-${Date.now()}`,
+        name: point.name,
+        day,
+        slot,
+        place: point.name,
+        activity: point.activity,
+        target: 0,
+        memberIds: [],
+        pinned: false,
+      }]);
+    }
+
+    setActivity(point.activity);
+    setMobileTab("turno");
+    setEditingTeam(true);
+    setFocusContext(`${point.name.toUpperCase()} — ${day} · ${slot}. Il fabbisogno volontari è lasciato da definire agli organizzatori.`);
+    goToSection("turno-workspace");
+  }
+
   const macroActivities = activities.filter((item) => !item.includes(" — "));
 
   const directoryVolunteers = dataMode === "test" ? [...activeVolunteers, testVolunteer] : activeVolunteers;
@@ -1668,10 +1723,10 @@ function OrganizzatoriDashboard() {
     }
   }
 
-  const coverage = Math.min(
-    100,
-    Math.round((teamMembers.length / Math.max(1, selectedTeam.target)) * 100),
-  );
+  const coverage = selectedTeam.target > 0
+    ? Math.min(100, Math.round((teamMembers.length / selectedTeam.target) * 100))
+    : 0;
+  const coverageLabel = selectedTeam.target > 0 ? `${coverage}%` : "—";
 
   function goToSection(id: "turno-workspace" | "people-workspace" | "coverage-workspace") {
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -2049,11 +2104,57 @@ function OrganizzatoriDashboard() {
           )}
         </section>
 
+        <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Sale e presidi</p>
+              <h2 className="text-base font-black uppercase lg:text-lg">Copertura per luogo, non per singolo evento</h2>
+              <p className={`mt-1 max-w-3xl text-[10px] sm:text-xs ${muted}`}>
+                Una squadra può presidiare lo stesso spazio per tutta la fascia anche se dentro si alternano più interventi. Il numero necessario resta modificabile dagli organizzatori.
+              </p>
+            </div>
+            <div className={`text-[10px] font-bold sm:text-xs ${mutedStrong}`}>{day} · {slot}</div>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {operationalPoints.map((point) => {
+              const team = teams.find((item) => item.day === day && item.slot === slot && item.activity === point.activity);
+              const assigned = team ? team.memberIds.filter((id) => activeVolunteerIds.has(id)).length : 0;
+              const targetDefined = Boolean(team && team.target > 0);
+              return (
+                <button
+                  key={point.id}
+                  type="button"
+                  onClick={() => openOperationalPoint(point)}
+                  className={`border-2 p-3 text-left transition hover:border-[#b85668] ${panelSoft}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="size-4 shrink-0 text-[#c76476]" />
+                        <strong className="text-sm uppercase lg:text-base">{point.name}</strong>
+                      </div>
+                      <div className={`mt-1 text-[9px] font-black uppercase ${mutedStrong}`}>{point.kind}</div>
+                      <p className={`mt-2 text-[10px] leading-snug sm:text-xs ${muted}`}>{point.note}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="text-lg font-black">{targetDefined ? `${assigned}/${team?.target}` : `${assigned}/?`}</div>
+                      <div className={`text-[9px] ${muted}`}>{targetDefined ? "assegnati / necessari" : "fabbisogno da definire"}</div>
+                    </div>
+                  </div>
+                  <div className={`mt-2 border-t pt-2 text-[10px] font-bold ${mutedStrong}`}>
+                    {team ? "Apri gestione della fascia" : "Configura questa fascia"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <section className="grid grid-cols-4 gap-1.5 lg:gap-3">
           <Kpi label="Totali" value={String(activeVolunteers.length)} light={isLight} />
           <Kpi label="Disponibili" value={String(compatible.length)} light={isLight} />
           <Kpi label="Assegnati" value={String(teamMembers.length)} light={isLight} />
-          <Kpi label="Copertura" value={`${coverage}%`} light={isLight} onHelp={() => setHelpTopic("coverage")} />
+          <Kpi label="Copertura" value={coverageLabel} light={isLight} onHelp={() => setHelpTopic("coverage")} />
         </section>
 
         <section className={`mt-3 border-2 p-3 lg:mt-4 lg:p-4 ${underCoveredTeams.length ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"}`}>
@@ -2126,18 +2227,19 @@ function OrganizzatoriDashboard() {
             <p className={`mt-2 text-[10px] sm:text-xs ${muted}`}>1. Scegli data e fascia. 2. Tocca l’attività da gestire: si apre direttamente il turno corretto.</p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {shiftSummary.map((item) => {
-                const pct = Math.min(100, Math.round((item.assigned / item.target) * 100));
-                const complete = item.assigned >= item.target;
+                const targetDefined = item.target > 0;
+                const pct = targetDefined ? Math.min(100, Math.round((item.assigned / item.target) * 100)) : 0;
+                const complete = targetDefined && item.assigned >= item.target;
                 return (
                   <button key={item.activity} type="button" onClick={() => { setActivity(item.activity); setSlot(item.slot); setMobileTab("turno"); setFocusContext(`${item.activity.toUpperCase()} — ${day} · ${item.slot}: ${complete ? "turno coperto" : `mancano ${item.target - item.assigned} persone`}. Qui puoi vedere i compatibili e gestire la squadra.`); goToSection("turno-workspace"); }}
                     className="border-l-4 border-y border-r p-3 text-left transition-opacity hover:opacity-90"
                     style={activityTone(item.activity, isLight)}>
                     <div className="flex items-center justify-between gap-2">
                       <strong className="text-xs uppercase lg:text-sm">{item.activity}</strong>
-                      <span className={`text-sm font-black ${complete ? "" : "text-[#c76476]"}`}>{item.assigned}/{item.target}</span>
+                      <span className={`text-sm font-black ${complete ? "" : "text-[#c76476]"}`}>{targetDefined ? `${item.assigned}/${item.target}` : `${item.assigned}/?`}</span>
                     </div>
                     <div className={`mt-2 h-1.5 ${isLight ? "bg-ink/10" : "bg-paper/10"}`}><div className="h-full" style={{ width: `${pct}%`, backgroundColor: paletteFor(item.activity).accent }} /></div>
-                    <div className={`mt-1 text-[10px] ${muted}`}>{item.slot} · {complete ? "Coperto" : `Mancano ${item.target-item.assigned}`}</div>
+                    <div className={`mt-1 text-[10px] ${muted}`}>{item.slot} · {!targetDefined ? "Fabbisogno da definire" : complete ? "Coperto" : `Mancano ${item.target-item.assigned}`}</div>
                   </button>
                 );
               })}
@@ -2166,12 +2268,13 @@ function OrganizzatoriDashboard() {
                     <div className="col-span-3 font-bold lg:col-span-1 lg:border-l-4 lg:p-2" style={activityTone(item, isLight)}>{item}</div>
                     {["Mattina","Pomeriggio","Sera"].map((s) => {
                       const team = teams.find((t) => t.day === day && t.slot === s && t.activity === item);
-                      const short = team ? team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target : false;
+                      const targetDefined = team ? team.target > 0 : false;
+                      const short = team ? targetDefined && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target : false;
                       return <button key={s} type="button" onClick={() => { setActivity(item); setSlot(s); setMobileTab("turno"); setFocusContext(`${item.toUpperCase()} — ${day} · ${s}: ${team ? `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/${team.target} assegnati` : "turno non ancora configurato"}. Sei nella gestione esatta di questa cella.`); goToSection("turno-workspace"); }}
                         className={`border p-2 text-center font-black ${team ? "" : muted}`}
                         style={team ? activityTone(item, isLight) : undefined}>
                         <span className={`mb-0.5 block text-[8px] font-bold uppercase lg:hidden ${muted}`}>{s}</span>
-                        {team ? <><span className={short ? "text-[#c76476]" : ""}>{team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/{team.target}</span><span className={`block text-[9px] font-normal ${muted}`}>{short ? "da coprire" : "coperto"}</span></> : "—"}
+                        {team ? <><span className={short ? "text-[#c76476]" : ""}>{targetDefined ? `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/${team.target}` : `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/?`}</span><span className={`block text-[9px] font-normal ${muted}`}>{!targetDefined ? "da definire" : short ? "da coprire" : "coperto"}</span></> : "—"}
                       </button>;
                     })}
                   </div>
@@ -2318,7 +2421,8 @@ function OrganizzatoriDashboard() {
               <Info label="Fascia" value={selectedTeam.slot} light={isLight} />
               <Info label="Attività" value={selectedTeam.activity} light={isLight} />
               <div><dt className={`text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Persone necessarie</dt>
-                <input type="number" min={1} max={99} value={selectedTeam.target} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ target: Math.max(1, Number(e.target.value) || 1) })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
+                <input type="number" min={0} max={99} value={selectedTeam.target} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ target: Math.max(0, Number(e.target.value) || 0) })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
+                <div className={`mt-1 text-[9px] ${muted}`}>0 = fabbisogno ancora da definire</div>
               </div>
               <div className="col-span-2"><dt className={`text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Nome squadra</dt>
                 <input value={selectedTeam.name} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ name: e.target.value })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
@@ -2330,7 +2434,7 @@ function OrganizzatoriDashboard() {
 
             <div className={`mt-3 border-t-2 border-[#b85668]/45 pt-3`}>
               <div className="mb-1.5 flex items-center justify-between text-xs">
-                <span>Copertura</span><strong>{teamMembers.length}/{selectedTeam.target}</strong>
+                <span>Copertura</span><strong>{selectedTeam.target > 0 ? `${teamMembers.length}/${selectedTeam.target}` : `${teamMembers.length}/?`}</strong>
               </div>
               <div className={`h-2 overflow-hidden ${isLight ? "bg-ink/10" : "bg-paper/10"}`}>
                 <div className="h-full bg-[#b85668]" style={{ width: `${coverage}%` }} />
