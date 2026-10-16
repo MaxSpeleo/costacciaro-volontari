@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { loadOperationalDashboard, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard } from "@/lib/dashboard-operational";
+import { loadOperationalDashboard,
+  loadTestVolunteerSnapshot, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard } from "@/lib/dashboard-operational";
 
 export const Route = createFileRoute("/organizzatori")({
   head: () => ({
@@ -1261,6 +1262,7 @@ function OrganizzatoriDashboard() {
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
   const [personalQuery, setPersonalQuery] = useState("");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
+  const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
@@ -1283,6 +1285,12 @@ function OrganizzatoriDashboard() {
     memberIds: [],
     pinned: false,
   }, [teams, day, slot, activity]);
+
+  useEffect(() => {
+    loadTestVolunteerSnapshot()
+      .then((items) => setTestVolunteers(items))
+      .catch(() => setTestVolunteers([]));
+  }, []);
 
   useEffect(() => {
     const savedMode = localStorage.getItem("costacciaro-dashboard-mode");
@@ -1437,7 +1445,7 @@ function OrganizzatoriDashboard() {
     return () => window.clearTimeout(timer);
   }, [activities, dataMode]);
 
-  const activeVolunteers = dataMode === "test" ? demoVolunteers.slice(0, testSize) : liveVolunteers;
+  const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
 
   function switchDataMode(nextMode: "test" | "live") {
     if (nextMode === dataMode) return;
@@ -2156,7 +2164,7 @@ function OrganizzatoriDashboard() {
         ) : null}
 
         <section className={`mb-3 flex flex-wrap items-center justify-between gap-2 border-2 px-3 py-2 text-xs font-bold ${dataMode === "test" ? "border-amber-500 bg-amber-500/10" : "border-emerald-600 bg-emerald-600/10"}`}>
-          <span>{dataMode === "test" ? `PROVA · ${testSize} volontari` : `OPERATIVO · ${liveLoading ? "caricamento…" : `${liveVolunteers.length} volontari`}`}</span>
+          <span>{dataMode === "test" ? `PROVA · ${activeVolunteers.length} volontari` : `OPERATIVO · ${liveLoading ? "caricamento…" : `${liveVolunteers.length} volontari`}`}</span>
           {dataMode === "live" && liveSyncLabel ? <span className={liveError ? "text-[#c76476]" : mutedStrong}>{liveError || liveSyncLabel}</span> : null}
         </section>
 
