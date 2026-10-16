@@ -1236,7 +1236,7 @@ function activityTone(name: string, light: boolean) {
   return { borderColor: tone.accent, backgroundColor: light ? tone.tintLight : tone.tintDark };
 }
 
-function OrganizzatoriDashboard() {
+export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnly?: boolean } = {}) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dataMode, setDataMode] = useState<"test" | "live">("test");
   const [testSize, setTestSize] = useState<30 | 40 | 50>(50);
@@ -1258,7 +1258,7 @@ function OrganizzatoriDashboard() {
   const [peopleFilterOpen, setPeopleFilterOpen] = useState(false);
   const [suggestedMemberIds, setSuggestedMemberIds] = useState<string[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
-  const [personalOpen, setPersonalOpen] = useState(false);
+  const [personalOpen, setPersonalOpen] = useState(volunteerOnly);
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
   const [personalQuery, setPersonalQuery] = useState("");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
@@ -1818,13 +1818,15 @@ function OrganizzatoriDashboard() {
               </div>
               <h1 className="mt-2 text-lg font-black uppercase sm:text-2xl">Il mio Costacciaro</h1>
             </div>
-            <button
-              type="button"
-              onClick={() => setPersonalOpen(false)}
-              className="min-h-11 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase sm:text-xs"
-            >
-              Torna alla dashboard
-            </button>
+            {!volunteerOnly ? (
+              <button
+                type="button"
+                onClick={() => setPersonalOpen(false)}
+                className="min-h-11 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase sm:text-xs"
+              >
+                Torna alla dashboard
+              </button>
+            ) : null}
           </header>
 
           <section className={`border-2 p-3 sm:p-5 ${panel}`}>
@@ -1956,14 +1958,15 @@ function OrganizzatoriDashboard() {
               ) : null}
             </div>
 
-              <button type="button"
-                onClick={() => { const next = !personalOpen; setPersonalOpen(next); if (next) { setDirectoryOpen(false); setCatalogOpen(false); } }}
-                aria-label="Il mio Costacciaro: consulta i turni di una persona"
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3 ${personalOpen ? "bg-[#b85668] text-white" : ""}`}>
+              <a
+                href="/volontario"
+                aria-label="Il mio Costacciaro: mostra la vista volontario"
+                className="flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3"
+              >
                 <UserRound className="size-4" />
                 <span className="text-[10px] sm:text-xs">Il mio Costacciaro</span>
-                <span className={`text-[8px] font-medium normal-case sm:hidden ${personalOpen ? "text-white/80" : muted}`}>dove · quando · squadra</span>
-              </button>
+                <span className={`text-[8px] font-medium normal-case sm:hidden ${muted}`}>vista volontario</span>
+              </a>
               <button type="button"
                 onClick={() => { const next = !directoryOpen; setDirectoryOpen(next); if (next) { setPersonalOpen(false); setCatalogOpen(false); } }}
                 aria-label="Rubrica: cerca contatti di volontari"
