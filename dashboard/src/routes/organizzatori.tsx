@@ -1839,12 +1839,6 @@ function OrganizzatoriDashboard() {
                 Operativo
               </button>
               {dataMode === "test" ? (
-                <select value={testSize} onChange={(e) => setTestSize(Number(e.target.value) as 30 | 40 | 50)}
-                  className={`min-h-11 border-2 border-amber-500 px-2 text-xs font-black ${input}`} aria-label="Numero volontari fittizi">
-                  <option value={30}>30 fittizi</option><option value={40}>40 fittizi</option><option value={50}>50 fittizi</option>
-                </select>
-              ) : null}
-              {dataMode === "test" ? (
                 <button type="button" onClick={resetTestEnvironment}
                   className="min-h-11 border-2 border-amber-500 px-3 text-[10px] font-black uppercase sm:text-xs">
                   Ripristina prova
@@ -2159,7 +2153,7 @@ function OrganizzatoriDashboard() {
               ))}
             </div>
             {filteredDirectoryVolunteers.length === 0 ? <p className={`mt-3 text-sm ${muted}`}>Nessun contatto trovato.</p> : null}
-            <p className={`mt-3 text-[10px] sm:text-xs ${muted}`}>DATI DI PROVA · Il dettaglio operativo modificabile verrà collegato al profilo senza alterare la risposta originale.</p>
+
           </section>
         ) : null}
 
