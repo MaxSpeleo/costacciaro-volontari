@@ -1815,7 +1815,7 @@ function OrganizzatoriDashboard() {
                   Dashboard Controllo
                 </h1>
                 <p className={`mt-1 max-w-2xl text-[10px] leading-snug sm:text-xs lg:text-sm ${muted}`}>
-                  Gestione volontari · <span className="text-[#c76476]">{dataMode === "test" ? "PROVE TECNICHE · DATI FITTIZI" : "MODALITÀ OPERATIVA"}</span>
+                  Gestione volontari · <span className="text-[#c76476]">{dataMode === "test" ? "PROVA" : "OPERATIVO"}</span>
                 </p>
               </div>
             </div>
@@ -1824,11 +1824,11 @@ function OrganizzatoriDashboard() {
             <div className="col-span-full flex flex-wrap items-center gap-2 sm:mr-2">
               <button type="button" onClick={() => switchDataMode("test")}
                 className={`min-h-11 border-2 px-3 text-[10px] font-black uppercase sm:text-xs ${dataMode === "test" ? "border-amber-500 bg-amber-500 text-black" : "border-[#b85668]"}`}>
-                Prove tecniche 🧪
+                Prova
               </button>
               <button type="button" onClick={() => switchDataMode("live")}
                 className={`min-h-11 border-2 px-3 text-[10px] font-black uppercase sm:text-xs ${dataMode === "live" ? "border-emerald-600 bg-emerald-600 text-white" : "border-[#b85668]"}`}>
-                Modalità operativa
+                Operativo
               </button>
               {dataMode === "test" ? (
                 <select value={testSize} onChange={(e) => setTestSize(Number(e.target.value) as 30 | 40 | 50)}
@@ -2155,19 +2155,9 @@ function OrganizzatoriDashboard() {
           </section>
         ) : null}
 
-        <section className={`mb-3 border-2 p-3 text-xs font-bold sm:text-sm ${dataMode === "test" ? "border-amber-500 bg-amber-500/10" : "border-emerald-600 bg-emerald-600/10"}`}>
-          {dataMode === "test" ? (
-            `PROVE TECNICHE — ambiente isolato · ${testSize} volontari fittizi · nessun dato reale`
-          ) : (
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">MODALITÀ OPERATIVA — archivio centrale protetto · {liveLoading ? "caricamento…" : `${liveVolunteers.length} volontari reali`}<button type="button" onClick={() => setHelpTopic("live")} className="rounded-full p-1" aria-label="Spiega modalità operativa"><CircleHelp className="size-4" /></button></div>
-              <div className="flex flex-wrap items-center gap-2 font-medium">
-                <span>Ingresso libero — verifica credenziali sospesa</span>
-              </div>
-              {liveSyncLabel ? <div className="font-medium">Sincronizzazione: {liveSyncLabel}</div> : null}
-              {liveError ? <div className="font-black text-[#c76476]">{liveError}</div> : null}
-            </div>
-          )}
+        <section className={`mb-3 flex flex-wrap items-center justify-between gap-2 border-2 px-3 py-2 text-xs font-bold ${dataMode === "test" ? "border-amber-500 bg-amber-500/10" : "border-emerald-600 bg-emerald-600/10"}`}>
+          <span>{dataMode === "test" ? `PROVA · ${testSize} volontari` : `OPERATIVO · ${liveLoading ? "caricamento…" : `${liveVolunteers.length} volontari`}`}</span>
+          {dataMode === "live" && liveSyncLabel ? <span className={liveError ? "text-[#c76476]" : mutedStrong}>{liveError || liveSyncLabel}</span> : null}
         </section>
 
         <nav className={`mb-3 hidden grid-cols-5 gap-2 lg:grid`}>
@@ -2182,10 +2172,7 @@ function OrganizzatoriDashboard() {
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Sale e presidi</p>
-              <h2 className="text-base font-black uppercase lg:text-lg">Copertura per luogo, non per singolo evento</h2>
-              <p className={`mt-1 max-w-3xl text-[10px] sm:text-xs ${muted}`}>
-                Una squadra può presidiare lo stesso spazio per tutta la fascia anche se dentro si alternano più interventi. Il numero necessario resta modificabile dagli organizzatori.
-              </p>
+              <h2 className="text-base font-black uppercase lg:text-lg">Sale e presidi</h2>
             </div>
             <div className={`text-[10px] font-bold sm:text-xs ${mutedStrong}`}>{day} · {slot}</div>
           </div>
@@ -2217,11 +2204,11 @@ function OrganizzatoriDashboard() {
                         </div>
                         <div className="shrink-0 text-right">
                           <div className="text-lg font-black">{targetDefined ? `${assigned}/${team?.target}` : `${assigned}/?`}</div>
-                          <div className={`text-[9px] ${muted}`}>{targetDefined ? "assegnati / necessari" : "fabbisogno da definire"}</div>
+                          <div className={`text-[9px] ${muted}`}>{targetDefined ? "assegnati / necessari" : "persone necessarie: da definire"}</div>
                         </div>
                       </div>
                       <div className={`mt-2 border-t pt-2 text-[10px] font-bold ${mutedStrong}`}>
-                        {team ? "Apri gestione della fascia" : "Configura questa fascia"}
+                        {team ? "Apri gestione della fascia" : "Apri turno"}
                       </div>
                     </button>
                   );
@@ -2233,9 +2220,9 @@ function OrganizzatoriDashboard() {
 
         <section className="grid grid-cols-4 gap-1.5 lg:gap-3">
           <Kpi label="Volontari" value={String(activeVolunteers.length)} light={isLight} />
-          <Kpi label="Compatibili ora" value={String(compatible.length)} light={isLight} />
-          <Kpi label="Assegnati qui" value={String(teamMembers.length)} light={isLight} />
-          <Kpi label="Copertura turno" value={coverageLabel} light={isLight} onHelp={() => setHelpTopic("coverage")} />
+          <Kpi label="Disponibili per questo turno" value={String(compatible.length)} light={isLight} />
+          <Kpi label="In squadra" value={String(teamMembers.length)} light={isLight} />
+          <Kpi label="Copertura" value={coverageLabel} light={isLight} onHelp={() => setHelpTopic("coverage")} />
         </section>
 
         <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${underCoveredTeams.length ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"}`}>
@@ -2297,7 +2284,7 @@ function OrganizzatoriDashboard() {
               <div>
                 <div className="flex items-center gap-1"><p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Regia del turno</p><button type="button" onClick={() => setHelpTopic("regia")} aria-label="Spiega regia del turno" className="rounded-full p-1"><CircleHelp className="size-4" /></button></div>
                 <h2 className="mt-1 text-lg font-black uppercase lg:text-2xl">{day || "Tutte le date"} · {slot || "Tutte le fasce"}</h2>
-                <p className={`mt-1 text-[10px] sm:text-xs ${muted}`}>Qui vedi solo i punti operativi della fascia selezionata. Il quadro giornaliero completo resta nella sezione successiva.</p>
+
               </div>
               <div className={`text-xs font-bold ${mutedStrong}`}>{availableUnassignedCount} disponibili non assegnati</div>
             </div>
@@ -2306,7 +2293,7 @@ function OrganizzatoriDashboard() {
               <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
               <div className={`self-end pb-2 text-[10px] font-bold sm:text-xs ${muted}`}>Poi scegli l’attività qui sotto ↓</div>
             </div>
-            <p className={`mt-2 text-[10px] sm:text-xs ${muted}`}>1. Scegli data e fascia. 2. Tocca l’attività da gestire: si apre direttamente il turno corretto.</p>
+
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {currentShiftSummary.map((item) => {
                 const targetDefined = item.target > 0;
@@ -2321,7 +2308,7 @@ function OrganizzatoriDashboard() {
                       <span className={`text-sm font-black ${complete ? "" : "text-[#c76476]"}`}>{targetDefined ? `${item.assigned}/${item.target}` : `${item.assigned}/?`}</span>
                     </div>
                     <div className={`mt-2 h-1.5 ${isLight ? "bg-ink/10" : "bg-paper/10"}`}><div className="h-full" style={{ width: `${pct}%`, backgroundColor: paletteFor(item.activity).accent }} /></div>
-                    <div className={`mt-1 text-[10px] ${muted}`}>{item.slot} · {!targetDefined ? "Fabbisogno da definire" : complete ? "Coperto" : `Mancano ${item.target-item.assigned}`}</div>
+                    <div className={`mt-1 text-[10px] ${muted}`}>{item.slot} · {!targetDefined ? "Persone necessarie: da definire" : complete ? "Coperto" : `Mancano ${item.target-item.assigned}`}</div>
                   </button>
                 );
               })}
