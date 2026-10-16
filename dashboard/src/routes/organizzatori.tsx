@@ -1806,6 +1806,116 @@ function OrganizzatoriDashboard() {
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
+  if (personalOpen) {
+    return (
+      <main className={`min-h-screen transition-colors ${shell}`}>
+        <div className="mx-auto max-w-4xl px-3 py-4 sm:px-5 lg:py-7">
+          <header className="mb-4 flex items-center justify-between border-b-2 border-[#b85668] pb-3">
+            <div>
+              <div className="font-black uppercase leading-none text-[#e7254b]">
+                <span className="block text-lg sm:text-2xl">Costacciaro</span>
+                <span className="block text-2xl sm:text-4xl">2026</span>
+              </div>
+              <h1 className="mt-2 text-lg font-black uppercase sm:text-2xl">Il mio Costacciaro</h1>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPersonalOpen(false)}
+              className="min-h-11 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase sm:text-xs"
+            >
+              Torna alla dashboard
+            </button>
+          </header>
+
+          <section className={`border-2 p-3 sm:p-5 ${panel}`}>
+            <label className="block text-[11px] sm:text-xs">
+              <span className="mb-1 block font-black uppercase opacity-70">Trova il tuo nome</span>
+              <div className={`flex min-h-11 items-center gap-2 border-2 px-3 ${input}`}>
+                <Search className="size-4 shrink-0 opacity-60" />
+                <input
+                  value={personalQuery}
+                  onChange={(e) => { setPersonalQuery(e.target.value); setPersonalVolunteerId(""); }}
+                  placeholder="Nome o cognome"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:opacity-45"
+                />
+                {personalQuery ? <button type="button" onClick={() => { setPersonalQuery(""); setPersonalVolunteerId(""); }} className="text-[10px] font-black uppercase">Pulisci</button> : null}
+              </div>
+            </label>
+
+            {personalMatches.length && !personalVolunteer ? (
+              <div className={`mt-1 max-h-64 overflow-auto border-2 border-[#b85668] p-1 ${isLight ? "bg-white" : "bg-ink"}`}>
+                {personalMatches.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => { setPersonalVolunteerId(v.id); setPersonalQuery(v.name); }}
+                    className={`block w-full border-b px-3 py-2 text-left last:border-b-0 ${isLight ? "border-ink/10 hover:bg-black/5" : "border-paper/10 hover:bg-white/5"}`}
+                  >
+                    <span className="block text-sm font-black">{v.name}</span>
+                    <span className={`text-[10px] ${muted}`}>{v.group || "Gruppo non indicato"}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
+            {personalVolunteer ? (
+              <div className="mt-5">
+                <div className={`border-2 p-4 ${panelSoft}`}>
+                  <p className="text-[10px] font-black uppercase text-[#c76476]">Volontario</p>
+                  <h2 className="mt-1 text-xl font-black uppercase">{personalVolunteer.name}</h2>
+                  {personalVolunteer.group ? <p className={`mt-1 text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
+                </div>
+
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className={`border-2 p-4 ${panel}`}>
+                    <p className="text-[10px] font-black uppercase text-[#c76476]">Prossimo turno</p>
+                    {personalNextTeam ? (
+                      <>
+                        <strong className="mt-2 block text-lg uppercase">{personalNextTeam.activity}</strong>
+                        <div className="mt-3 grid gap-2 text-sm">
+                          <span className="flex items-center gap-2 border px-2 py-2"><CalendarDays className="size-4" />{personalNextTeam.day}</span>
+                          <span className="flex items-center gap-2 border px-2 py-2"><Clock3 className="size-4" />{personalNextTeam.slot}</span>
+                          <span className="flex items-center gap-2 border px-2 py-2"><MapPin className="size-4" />{personalNextTeam.place}</span>
+                        </div>
+                      </>
+                    ) : <p className={`mt-3 text-sm ${muted}`}>Nessun turno assegnato al momento.</p>}
+                  </div>
+
+                  <div className={`border-2 p-4 ${panel}`}>
+                    <p className="text-[10px] font-black uppercase text-[#c76476]">Tutti i miei turni</p>
+                    <div className="mt-2 space-y-2">
+                      {personalTeams.length ? personalTeams.map((team) => (
+                        <div key={team.id} className={`border p-3 ${panelSoft}`}>
+                          <strong className="block text-sm uppercase">{team.day} · {team.slot}</strong>
+                          <span className="mt-1 block text-xs">{team.activity} · {team.place}</span>
+                        </div>
+                      )) : <p className={`text-xs ${muted}`}>Nessuna assegnazione.</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {personalNextTeam ? (
+                  <div className={`mt-3 border-2 p-4 ${panel}`}>
+                    <p className="text-[10px] font-black uppercase text-[#c76476]">Con chi sono</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {activeVolunteers.filter((v) => personalNextTeam.memberIds.includes(v.id)).map((v) => (
+                        <span key={v.id} className="border px-2 py-1 text-xs font-bold">{v.name}{v.group ? ` · ${v.group}` : ""}</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className={`mt-4 border-2 p-4 text-sm ${panelSoft}`}>
+                Cerca il tuo nome per vedere soltanto turni, luogo, attività e squadra.
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={`min-h-screen transition-colors ${shell}`}>
       <div className="mx-auto max-w-[1600px] px-3 py-4 sm:px-4 md:px-5 lg:px-8 xl:px-10 lg:py-7">
@@ -1851,7 +1961,7 @@ function OrganizzatoriDashboard() {
                 aria-label="Il mio Costacciaro: consulta i turni di una persona"
                 className={`flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3 ${personalOpen ? "bg-[#b85668] text-white" : ""}`}>
                 <UserRound className="size-4" />
-                <span className="text-[10px] sm:text-xs">I miei turni</span>
+                <span className="text-[10px] sm:text-xs">Il mio Costacciaro</span>
                 <span className={`text-[8px] font-medium normal-case sm:hidden ${personalOpen ? "text-white/80" : muted}`}>dove · quando · squadra</span>
               </button>
               <button type="button"
