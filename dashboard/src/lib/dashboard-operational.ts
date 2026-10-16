@@ -41,6 +41,35 @@ export type VolunteerOpsPatch = {
   tags?: string[];
 };
 
+export async function loadTestVolunteerSnapshot() {
+  const { data, error } = await supabase
+    .from("dashboard_test_volunteers")
+    .select("id,name,group_name,phone,email,days,hours,slots,activities,skills,restrictions,notes")
+    .eq("source_present", true)
+    .order("name");
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    group: row.group_name ?? "",
+    days: row.days ?? [],
+    hours: row.hours ?? undefined,
+    slots: row.slots ?? [],
+    activities: row.activities ?? [],
+    skills: row.skills ?? [],
+    restrictions: row.restrictions ?? undefined,
+    vehicle: false,
+    email: row.email ?? undefined,
+    phone: row.phone ?? undefined,
+    notes: row.notes ?? undefined,
+    status: "nuovo",
+    confirmed: false,
+    priority: 0,
+    internalNotes: undefined,
+    tags: [],
+  })) as OperationalVolunteer[];
+}
+
 export async function loadOperationalDashboard() {
   const [
     { data: teams, error: teamsError },
