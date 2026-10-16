@@ -1589,13 +1589,15 @@ function OrganizzatoriDashboard() {
   );
   const availableThisShift = activeVolunteers.filter((v) => v.days.includes(day) && v.slots.includes(slot));
   const availableUnassignedCount = availableThisShift.filter((v) => !assignedThisShiftIds.has(v.id)).length;
-  const shiftSummary = teams
+  const operationalActivityNames = new Set(operationalPoints.map((point) => point.activity));
+  const operationalTeams = teams.filter((team) => operationalActivityNames.has(team.activity));
+  const shiftSummary = operationalTeams
     .filter((team) => team.day === day)
     .map((team) => ({ activity: team.activity, slot: team.slot, assigned: team.memberIds.filter((id) => activeVolunteerIds.has(id)).length, target: team.target }));
   const currentShiftSummary = shiftSummary.filter((item) => item.slot === slot);
-  const uncoveredPlaces = shiftSummary.reduce((sum, item) => sum + Math.max(0, item.target - item.assigned), 0);
-  const underCoveredTeams = teams.filter((team) =>
-    team.day === day && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target
+  const uncoveredPlaces = shiftSummary.reduce((sum, item) => item.target > 0 ? sum + Math.max(0, item.target - item.assigned) : sum, 0);
+  const underCoveredTeams = operationalTeams.filter((team) =>
+    team.day === day && team.target > 0 && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target
   );
   const firstUnderCoveredTeam = underCoveredTeams[0];
   const personalMatches = useMemo(() => {
@@ -2187,39 +2189,46 @@ function OrganizzatoriDashboard() {
             </div>
             <div className={`text-[10px] font-bold sm:text-xs ${mutedStrong}`}>{day} · {slot}</div>
           </div>
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {operationalPoints.map((point) => {
-              const team = teams.find((item) => item.day === day && item.slot === slot && item.activity === point.activity);
-              const assigned = team ? team.memberIds.filter((id) => activeVolunteerIds.has(id)).length : 0;
-              const targetDefined = Boolean(team && team.target > 0);
-              return (
-                <button
-                  key={point.id}
-                  type="button"
-                  onClick={() => openOperationalPoint(point)}
-                  className={`border-2 p-3 text-left transition hover:border-[#b85668] ${panelSoft}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="size-4 shrink-0 text-[#c76476]" />
-                        <strong className="text-sm uppercase lg:text-base">{point.name}</strong>
+          {([
+            ["sala", "Sale e spazi evento"],
+            ["presidio", "Presidi e servizi"],
+          ] as const).map(([kind, label]) => (
+            <div key={kind} className="mt-4">
+              <div className={`mb-2 text-[10px] font-black uppercase tracking-wide ${mutedStrong}`}>{label}</div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {operationalPoints.filter((point) => point.kind === kind).map((point) => {
+                  const team = teams.find((item) => item.day === day && item.slot === slot && item.activity === point.activity);
+                  const assigned = team ? team.memberIds.filter((id) => activeVolunteerIds.has(id)).length : 0;
+                  const targetDefined = Boolean(team && team.target > 0);
+                  return (
+                    <button
+                      key={point.id}
+                      type="button"
+                      onClick={() => openOperationalPoint(point)}
+                      className={`border-2 p-3 text-left transition hover:border-[#b85668] ${panelSoft}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="size-4 shrink-0 text-[#c76476]" />
+                            <strong className="text-sm uppercase lg:text-base">{point.name}</strong>
+                          </div>
+                          <p className={`mt-2 text-[10px] leading-snug sm:text-xs ${muted}`}>{point.note}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-lg font-black">{targetDefined ? `${assigned}/${team?.target}` : `${assigned}/?`}</div>
+                          <div className={`text-[9px] ${muted}`}>{targetDefined ? "assegnati / necessari" : "fabbisogno da definire"}</div>
+                        </div>
                       </div>
-                      <div className={`mt-1 text-[9px] font-black uppercase ${mutedStrong}`}>{point.kind}</div>
-                      <p className={`mt-2 text-[10px] leading-snug sm:text-xs ${muted}`}>{point.note}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="text-lg font-black">{targetDefined ? `${assigned}/${team?.target}` : `${assigned}/?`}</div>
-                      <div className={`text-[9px] ${muted}`}>{targetDefined ? "assegnati / necessari" : "fabbisogno da definire"}</div>
-                    </div>
-                  </div>
-                  <div className={`mt-2 border-t pt-2 text-[10px] font-bold ${mutedStrong}`}>
-                    {team ? "Apri gestione della fascia" : "Configura questa fascia"}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                      <div className={`mt-2 border-t pt-2 text-[10px] font-bold ${mutedStrong}`}>
+                        {team ? "Apri gestione della fascia" : "Configura questa fascia"}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </section>
 
         <section className="grid grid-cols-4 gap-1.5 lg:gap-3">
