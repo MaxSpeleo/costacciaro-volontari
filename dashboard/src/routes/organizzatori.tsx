@@ -1270,6 +1270,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [liveSyncLabel, setLiveSyncLabel] = useState("");
   const [feedback, setFeedback] = useState("");
   const [focusContext, setFocusContext] = useState("");
+  const [returnSection, setReturnSection] = useState<{
+    id: "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace";
+    label: string;
+  } | null>(null);
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | null>(null);
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
@@ -1803,8 +1807,51 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     : 0;
   const coverageLabel = selectedTeam.target > 0 ? `${coverage}%` : "—";
 
-  function goToSection(id: "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace") {
+  type DashboardSectionId = "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace";
+
+  const sectionLabels: Record<DashboardSectionId, string> = {
+    "places-workspace": "Sale e presidi",
+    "priorities-workspace": "Priorità",
+    "coverage-workspace": "Regia turno",
+    "turno-workspace": "Turno selezionato",
+    "people-workspace": "Persone",
+  };
+
+  function currentDashboardSection(): DashboardSectionId | null {
+    if (typeof window === "undefined") return null;
+    const ids = Object.keys(sectionLabels) as DashboardSectionId[];
+    const visible = ids
+      .map((id) => {
+        const el = document.getElementById(id);
+        if (!el) return null;
+        const rect = el.getBoundingClientRect();
+        const intersects = rect.bottom > 80 && rect.top < window.innerHeight - 40;
+        return intersects ? { id, distance: Math.abs(rect.top - 120) } : null;
+      })
+      .filter((item): item is { id: DashboardSectionId; distance: number } => Boolean(item))
+      .sort((a, b) => a.distance - b.distance);
+    return visible[0]?.id ?? null;
+  }
+
+  function goToSection(id: DashboardSectionId, rememberOrigin = true) {
+    if (rememberOrigin) {
+      const origin = currentDashboardSection();
+      if (origin && origin !== id) {
+        setReturnSection({ id: origin, label: sectionLabels[origin] });
+      }
+    }
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  function returnToPreviousSection() {
+    if (!returnSection) return;
+    const target = returnSection;
+    setPeopleFilterOpen(false);
+    setEditingTeam(false);
+    setFocusContext("");
+    setMobileTab(target.id === "turno-workspace" ? "turno" : target.id === "people-workspace" ? "persone" : "panoramica");
+    setReturnSection(null);
+    goToSection(target.id, false);
   }
 
   if (personalOpen) {
@@ -2469,21 +2516,16 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </div>
         </section>
 
-        {focusContext ? (
+        {returnSection ? (
           <button
             type="button"
-            onClick={() => {
-              setPeopleFilterOpen(false);
-              setMobileTab("panoramica");
-              setEditingTeam(false);
-              setFocusContext("");
-              goToSection("places-workspace");
-            }}
+            onClick={returnToPreviousSection}
             className="fixed bottom-4 right-4 z-40 flex min-h-11 items-center gap-2 border-2 border-[#b85668] bg-ink px-4 text-xs font-black uppercase text-paper shadow-lg hover:bg-[#b85668] hover:text-white"
-            aria-label="Torna a Sale e presidi"
+            aria-label={`Torna a ${returnSection.label}`}
+            title={`Torna a ${returnSection.label}`}
           >
             <ArrowUp className="size-4" />
-            Sale e presidi
+            <span className="hidden sm:inline">Torna a </span>{returnSection.label}
           </button>
         ) : null}
 
