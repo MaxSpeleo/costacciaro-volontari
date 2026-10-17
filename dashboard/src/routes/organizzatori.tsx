@@ -1329,6 +1329,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   >(null);
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [guidedMode, setGuidedMode] = useState(true);
+  const [guideMenuOpen, setGuideMenuOpen] = useState(false);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
   const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities">("overview");
@@ -2411,6 +2412,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? selectedTeam.memberIds.length > 0 : false;
   function startAssignmentGuide() {
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
+    setGuideMenuOpen(false);
     navigateAssignmentGuide(0);
   }
   function navigateAssignmentGuide(step: number) {
@@ -2453,6 +2455,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   function guideTo(choice: typeof guideChoice) {
+    setGuidedAssignmentStep(null);
+    setGuideMenuOpen(false);
     setGuideChoice(choice);
     setHelpTopic(null);
     setDirectoryOpen(choice === "contacts");
@@ -3534,41 +3538,47 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         {guidedMode ? (
-          <section className={`mb-3 border-2 border-amber-400 p-3 ${panel}`} aria-label="Assistente guidato organizzatori">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+          <section className={`mb-3 border-2 border-amber-400 p-3 ${panel}`} aria-label="Scegli cosa fare">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <CircleHelp className="size-5 text-[#c76476]" />
-                <div><strong className="text-base uppercase text-amber-400">Cosa vuoi fare? · Guida operativa</strong><p className={`text-xs ${muted}`}>Che cosa vuoi fare? Ti porto alla funzione giusta.</p></div>
-              </div>
-              <button type="button" onClick={() => setGuidedMode(false)} className="border px-2 py-1 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
-            </div>
-            <div className="mt-3 border-t border-[#b85668]/50 pt-3">
-              <button type="button" onClick={startAssignmentGuide} className="min-h-11 border-2 border-amber-400 bg-amber-400 px-4 py-3 text-sm font-black text-black">
-                {guidedAssignmentStep === null ? "Guidami passo passo nell'assegnazione →" : "Ricomincia percorso guidato"}
-              </button>
-              {guidedAssignmentStep !== null ? <p className="mt-2 text-xs">La guida attiva è nel pannello a destra. Segui il comando evidenziato.</p> : null}
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {([
-                ["staffing","Definisci persone necessarie","Scegli data, fascia, attività e numero di volontari richiesti."],
-                ["assign","Proponi assegnazioni","Genera un'anteprima da approvare, senza modificare squadre esistenti."],
-                ["priority","Risolvi priorità","Mostra i turni ancora scoperti e le situazioni da controllare."],
-                ["people","Gestisci squadre","Assegna o sposta manualmente i volontari."],
-                ["contacts","Trova contatti","Cerca telefono, WhatsApp ed email dei volontari."],
-                ["messages","Invia messaggi","Apri le comunicazioni interne."],
-                ["activities","Gestisci attività","Modifica le attività e i sottogruppi."],
-                ["overview","Torna al riepilogo","Chiude le sezioni e mostra la panoramica."]
-              ] as const).map(([id,label,description]) => (
-                <div key={id} className={`flex items-center border ${guideHighlight === id ? "border-amber-400 ring-2 ring-amber-400" : "border-[#b85668]/50"}`}>
-                  <button type="button" onClick={() => guideTo(id)} className="min-h-12 flex-1 p-2 text-left text-xs font-bold">{label}</button>
-                  <button type="button" onClick={() => {setGuideChoice(id);setGuideHighlight(id);setFeedback(description);}} className="min-h-12 border-l px-2" aria-label={`Spiega: ${label}`} title={description}><CircleHelp className="size-4" /></button>
+                <CircleHelp className="size-6 text-amber-400" />
+                <div>
+                  <strong className="text-base font-black uppercase">Cosa vuoi fare?</strong>
+                  <p className={`text-xs ${muted}`}>Scegli un'operazione: ti porto direttamente ai comandi pertinenti.</p>
                 </div>
-              ))}
+              </div>
+              <div className="flex gap-2">
+                <button type="button" aria-expanded={guideMenuOpen} onClick={() => setGuideMenuOpen(v => !v)} className="min-h-11 border-2 border-amber-400 bg-amber-400 px-4 text-sm font-black text-black">
+                  {guideMenuOpen ? "Chiudi le opzioni" : "Scegli operazione →"}
+                </button>
+                <button type="button" onClick={() => setGuidedMode(false)} className="min-h-11 border px-2 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
+              </div>
             </div>
-            {guideHighlight ? <p role="status" className="mt-2 text-xs">Sezione evidenziata: {guideHighlight === "staffing" ? "Modifica turno → Persone necessarie" : guideHighlight === "assign" ? "Persone → Proponi assegnazioni" : "usa il pulsante selezionato"}. Puoi aprire il ? per una spiegazione.</p> : null}
+            {guideMenuOpen ? (
+              <div className="mt-3 grid gap-2 border-t border-amber-400/50 pt-3 sm:grid-cols-2 lg:grid-cols-3">
+                <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
+                  <strong className="block text-sm">Assegna volontari →</strong>
+                  <span className={`mt-1 block text-xs ${muted}`}>Percorso completo guidato, fino alla verifica della squadra</span>
+                </button>
+                {([
+                  ["staffing","Configura un turno","Apri la modifica di fabbisogno e turno"],
+                  ["priority","Risolvi posti scoperti","Apri le priorità da gestire"],
+                  ["people","Gestisci squadre","Apri la selezione e le assegnazioni"],
+                  ["contacts","Trova un contatto","Apri la ricerca dei volontari"],
+                  ["messages","Invia un messaggio","Apri le comunicazioni"],
+                  ["activities","Gestisci attività","Apri le attività e i sottogruppi"],
+                  ["overview","Torna alla panoramica","Mostra il riepilogo principale"]
+                ] as const).map(([id,label,description]) => (
+                  <button key={id} type="button" onClick={() => guideTo(id)} className={`min-h-16 border-2 p-3 text-left ${isLight ? "border-ink/20 hover:border-amber-500" : "border-paper/20 hover:border-amber-400"}`}>
+                    <strong className="block text-sm">{label} →</strong>
+                    <span className={`mt-1 block text-xs ${muted}`}>{description}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </section>
         ) : (
-          <button type="button" onClick={() => setGuidedMode(true)} className="mb-3 flex min-h-10 items-center gap-2 border-2 border-[#b85668] px-3 text-xs font-black uppercase"><CircleHelp className="size-4" /> Apri guida rapida</button>
+          <button type="button" onClick={() => { setGuidedMode(true); setGuideMenuOpen(true); }} className="mb-3 min-h-11 border-2 border-amber-400 px-4 text-sm font-black">Cosa vuoi fare? · Apri guida</button>
         )}
         <nav className={`sticky top-0 z-30 mb-3 border-2 border-[#b85668] p-1 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
           <div className="flex gap-1 overflow-x-auto">
