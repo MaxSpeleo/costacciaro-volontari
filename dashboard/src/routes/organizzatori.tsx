@@ -2339,6 +2339,78 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  if (!volunteerOnly && !organizerAccessReady) {
+    return (
+      <main className={`min-h-screen transition-colors ${shell}`}>
+        <div className="mx-auto flex min-h-screen max-w-lg items-center px-4">
+          <div className={`w-full border-2 p-5 ${panel}`}>
+            <img
+              src={costacciaroLogoDataUri}
+              style={{ filter: "brightness(0) saturate(100%) invert(26%) sepia(86%) saturate(3386%) hue-rotate(330deg) brightness(98%) contrast(93%)" }}
+              alt="Costacciaro 2026"
+              className="mx-auto h-auto w-[240px] max-w-[70vw]"
+            />
+            <p className={`mt-4 text-center text-sm ${muted}`}>Verifica accesso organizzatori…</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!volunteerOnly && !organizerAccessGranted) {
+    return (
+      <main className={`min-h-screen transition-colors ${shell}`}>
+        <div className="mx-auto flex min-h-screen max-w-lg items-center px-4 py-8">
+          <div className={`w-full border-2 p-5 ${panel}`}>
+            <img
+              src={costacciaroLogoDataUri}
+              style={{ filter: "brightness(0) saturate(100%) invert(26%) sepia(86%) saturate(3386%) hue-rotate(330deg) brightness(98%) contrast(93%)" }}
+              alt="Costacciaro 2026"
+              className="h-auto w-[250px] max-w-[75vw] object-contain object-left"
+            />
+            <p className="mt-5 text-[10px] font-black uppercase text-[#c76476]">Dashboard organizzatori</p>
+            <h1 className="mt-1 text-2xl font-black uppercase">Accesso al pannello</h1>
+            <p className={`mt-2 text-sm ${muted}`}>Prima associazione: usa la tua email autorizzata e le ultime 4 cifre del telefono. Questo dispositivo verrà poi riconosciuto automaticamente.</p>
+
+            <div className="mt-5 grid gap-3">
+              <label className="grid gap-1 text-xs font-bold">
+                Email
+                <input
+                  type="email"
+                  value={organizerEmail}
+                  onChange={(e) => setOrganizerEmail(e.target.value)}
+                  autoComplete="email"
+                  className={`min-h-11 border-2 px-3 ${input}`}
+                  placeholder="email organizzatore"
+                />
+              </label>
+              <label className="grid gap-1 text-xs font-bold">
+                Ultime 4 cifre telefono
+                <input
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={organizerPhone4}
+                  onChange={(e) => setOrganizerPhone4(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className={`min-h-11 border-2 px-3 ${input}`}
+                  placeholder="1234"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={pairOrganizerAccess}
+                disabled={organizerAccessBusy || !organizerEmail.trim() || organizerPhone4.length !== 4}
+                className="min-h-11 border-2 border-[#b85668] bg-[#b85668] px-4 text-xs font-black uppercase text-white disabled:opacity-50"
+              >
+                {organizerAccessBusy ? "Verifica…" : "Associa questo dispositivo"}
+              </button>
+              {organizerAccessError ? <p className="text-xs font-bold text-[#c76476]">{organizerAccessError}</p> : null}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (personalOpen) {
     return (
       <main className={`min-h-screen transition-colors ${shell}`}>
