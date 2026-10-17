@@ -1279,6 +1279,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [volunteerMessages, setVolunteerMessages] = useState<VolunteerMessage[]>([]);
   const [messageType, setMessageType] = useState<"notice" | "direct" | "team">("notice");
   const [messageTargetVolunteerId, setMessageTargetVolunteerId] = useState("");
+  const [messageTargetQuery, setMessageTargetQuery] = useState("");
   const [messageTargetTeamId, setMessageTargetTeamId] = useState("");
   const [messageTitle, setMessageTitle] = useState("");
   const [messageBody, setMessageBody] = useState("");
@@ -1639,6 +1640,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       setMessageBody("");
       setMessageUrgent(false);
       setMessageTargetVolunteerId("");
+      setMessageTargetQuery("");
       setMessageTargetTeamId("");
       setFeedback(`✓ Messaggio inviato a ${result.recipient_count} destinatari.`);
       setDashboardMessages(await loadDashboardMessages());
@@ -1682,6 +1684,13 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
+  const messageVolunteerMatches = useMemo(() => {
+    const q = messageTargetQuery.trim().toLowerCase();
+    if (!q) return activeVolunteers.slice(0, 8);
+    return activeVolunteers
+      .filter((v) => `${v.name} ${v.group || ""}`.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [activeVolunteers, messageTargetQuery]);
 
   function switchDataMode(nextMode: "test" | "live") {
     if (nextMode === dataMode) return;
@@ -2632,14 +2641,31 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </label>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {filteredDirectoryVolunteers.map((v) => (
-                <button
+                <div
                   key={v.id}
-                  type="button"
-                  onClick={() => setExpandedVolunteerIds((current) => current.includes(v.id) ? current.filter((id) => id !== v.id) : [...current, v.id])}
                   className={`w-full border p-3 text-left ${isLight ? "border-ink/15" : "border-paper/20"}`}
                 >
-                  <strong className="text-sm">{v.name}</strong>
-                  <span className={`ml-1 text-xs ${muted}`}>· {v.group}</span>
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedVolunteerIds((current) => current.includes(v.id) ? current.filter((id) => id !== v.id) : [...current, v.id])}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <strong className="text-sm">{v.name}</strong>
+                      <span className={`ml-1 text-xs ${muted}`}>· {v.group}</span>
+                    </button>
+                    {expandedVolunteerIds.includes(v.id) ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedVolunteerIds((current) => current.filter((id) => id !== v.id))}
+                        className="grid size-8 shrink-0 place-items-center border border-[#b85668] hover:bg-[#b85668] hover:text-white"
+                        aria-label={`Chiudi scheda ${v.name}`}
+                        title="Chiudi scheda"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    ) : null}
+                  </div>
                   {expandedVolunteerIds.includes(v.id) ? (
                     <span className="mt-2 block text-xs" onClick={(e) => e.stopPropagation()}>
                       <span className="flex flex-wrap gap-2">
@@ -2724,7 +2750,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                       ) : null}
                     </span>
                   ) : null}
-                </button>
+                </div>
               ))}
             </div>
             {filteredDirectoryVolunteers.length === 0 ? <p className={`mt-3 text-sm ${muted}`}>Nessun contatto trovato.</p> : null}
@@ -2768,14 +2794,46 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                       </label>
 
                       {messageType === "direct" ? (
-                        <label className="grid gap-1 text-xs font-bold">
-                          Volontario
-                          <select value={messageTargetVolunteerId} onChange={(e) => setMessageTargetVolunteerId(e.target.value)}
-                            className={`min-h-11 border-2 px-3 ${input}`}>
-                            <option value="">Seleziona…</option>
-                            {activeVolunteers.map((v) => <option key={v.id} value={v.id}>{v.name}{v.group ? ` · ${v.group}` : ""}</option>)}
-                          </select>
-                        </label>
+                        <div className="grid gap-1 text-xs font-bold">
+                          <span>Volontario</span>
+                          <div className="relative">
+                            <div className={`flex min-h-11 items-center gap-2 border-2 px-3 ${input}`}>
+                              <Search className="size-4 shrink-0 opacity-60" />
+                              <input
+                                value={messageTargetQuery}
+                                onChange={(e) => {
+                                  setMessageTargetQuery(e.target.value);
+                                  setMessageTargetVolunteerId("");
+                                }}
+                                placeholder="Scrivi nome o cognome…"
+                                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:opacity-45"
+                              />
+                              {messageTargetQuery ? (
+                                <button type="button" onClick={() => { setMessageTargetQuery(""); setMessageTargetVolunteerId(""); }}
+                                  className="text-[10px] font-black uppercase">Pulisci</button>
+                              ) : null}
+                            </div>
+                            {!messageTargetVolunteerId && messageTargetQuery.trim() ? (
+                              <div className={`absolute left-0 right-0 top-full z-40 mt-1 max-h-64 overflow-auto border-2 border-[#b85668] p-1 shadow-xl ${isLight ? "bg-white" : "bg-ink"}`}>
+                                {messageVolunteerMatches.length ? messageVolunteerMatches.map((v) => (
+                                  <button
+                                    key={v.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setMessageTargetVolunteerId(v.id);
+                                      setMessageTargetQuery(v.name);
+                                    }}
+                                    className={`block w-full border-b px-3 py-2 text-left last:border-b-0 ${isLight ? "border-ink/10 hover:bg-black/5" : "border-paper/10 hover:bg-white/5"}`}
+                                  >
+                                    <span className="block text-sm font-black">{v.name}</span>
+                                    <span className={`text-[10px] ${muted}`}>{v.group || "Gruppo non indicato"}</span>
+                                  </button>
+                                )) : <div className={`px-3 py-2 text-xs ${muted}`}>Nessun volontario trovato.</div>}
+                              </div>
+                            ) : null}
+                          </div>
+                          {messageTargetVolunteerId ? <span className="text-[10px] font-bold text-emerald-600">Destinatario selezionato</span> : null}
+                        </div>
                       ) : null}
 
                       {messageType === "team" ? (
