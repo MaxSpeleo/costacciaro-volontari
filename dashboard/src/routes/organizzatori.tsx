@@ -3544,6 +3544,22 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : (
           <button type="button" onClick={() => setGuidedMode(true)} className="mb-3 flex min-h-10 items-center gap-2 border-2 border-[#b85668] px-3 text-xs font-black uppercase"><CircleHelp className="size-4" /> Apri guida rapida</button>
         )}
+        {guidedAssignmentStep !== null && activeWorkspace !== null && !volunteerOnly ? (
+          <aside role="region" aria-label="Guida assegnazione attiva" className={`fixed bottom-3 left-3 right-3 z-50 mx-auto max-w-xl border-2 border-[#b85668] p-3 shadow-2xl ${isLight ? "bg-white text-ink" : "bg-ink text-paper"}`}>
+            <p className="text-xs font-black uppercase">Guida · Passaggio {guidedAssignmentStep + 1} di {assignmentGuide.length}</p>
+            <p className="mt-1 text-sm font-black">{assignmentGuide[guidedAssignmentStep].title}</p>
+            <p className="mt-1 text-xs">{assignmentGuide[guidedAssignmentStep].details}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
+              {guidedAssignmentStep < assignmentGuide.length - 1 ? (
+                <button type="button" onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Prossimo →</button>
+              ) : (
+                <button type="button" onClick={() => { setGuidedAssignmentStep(null); goToDashboardTop(); }} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Termina</button>
+              )}
+              <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-11 px-2 text-xs underline">Esci</button>
+            </div>
+          </aside>
+        ) : null}
         <nav className={`sticky top-0 z-30 mb-3 border-2 border-[#b85668] p-1 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
           <div className="flex gap-1 overflow-x-auto">
             <button
