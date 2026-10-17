@@ -400,3 +400,10 @@ export async function archiveVolunteerInboxMessage(id: string, archived = true) 
   if (error) throw error;
   return data as { ok: boolean };
 }
+
+
+export async function dashboardArchivePreviousDay() {
+  const { data, error } = await supabase.rpc("dashboard_archive_previous_day_working");
+  if (error) throw error;
+  return data as { ok: boolean; sent_archived?: number; inbox_archived?: number };
+}
