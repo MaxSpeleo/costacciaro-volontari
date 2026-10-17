@@ -3711,8 +3711,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <div className={`text-xs font-bold ${mutedStrong}`}>{availableUnassignedCount} disponibili non assegnati</div>
             </div>
             <div id="guide-shift" className={`mt-3 grid gap-2 border-y py-3 sm:grid-cols-[1fr_1fr_auto] ${guidedAssignmentStep === 0 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${isLight ? "border-ink/10" : "border-paper/10"}`}>
-              <Select label="Data" guideId="guide-date" guided={guidedAssignmentStep === 0} value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
-              <Select label="Fascia" guideId="guide-slot" guided={guidedAssignmentStep === 0} value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
+              <Select label="Data" value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
+              <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
               <div className={`self-end pb-2 text-[10px] font-bold sm:text-xs ${muted}`}>Poi scegli l’attività qui sotto ↓</div>
             </div>
 
