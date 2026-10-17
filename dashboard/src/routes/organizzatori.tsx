@@ -2407,7 +2407,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   ];
   const guideNewMembers = selectedTeam.memberIds.filter((id) => !guidedStartingMemberIds.includes(id));
   const guideCanContinue = guidedAssignmentStep === 0 ? Boolean(day && slot)
-    : guidedAssignmentStep === 1 ? Boolean(activity && selectedTeam.id !== "__draft__")
+    : guidedAssignmentStep === 1 ? Boolean(activity)
     : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? guideNewMembers.length > 0 : false;
   function startAssignmentGuide() {
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
