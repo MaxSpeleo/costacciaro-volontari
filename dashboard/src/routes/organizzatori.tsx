@@ -2419,7 +2419,13 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setGuidedAssignmentStep(next);
     navigateDashboardSection(assignmentGuide[next].target);
     window.setTimeout(() => {
-      document.getElementById(assignmentGuide[next].focus)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const peoplePane = document.getElementById("people-workspace");
+      if (next >= 2 && peoplePane) {
+        peoplePane.scrollTop = 0;
+        peoplePane.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        document.getElementById(assignmentGuide[next].focus)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }, 250);
   }
 
@@ -3838,9 +3844,13 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </div>
         </section>
 
-        <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-4 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
+        <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-20 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
+          {guidedAssignmentStep !== null && guidedAssignmentStep >= 2 ? (
+            <div className={`sticky top-0 z-30 col-span-full border-2 border-amber-400 p-2 shadow-lg ${isLight ? "bg-white" : "bg-ink"}`}>
+              {guideActions(guidedAssignmentStep)}
+            </div>
+          ) : null}
           <div id="guide-people" className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
-            {guideActions(2)}
             {focusContext ? <div role="status" className={`relative z-0 mb-3 border-2 border-[#b85668] p-3 text-xs font-bold ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}><p className="mb-1 text-[10px] font-black uppercase text-[#c76476]">Perché sei qui</p>{focusContext}</div> : null}
             <div className="mb-2 flex items-center justify-between gap-2">
               <div>
@@ -3922,7 +3932,6 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
-            {guideActions(3)}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Squadra del turno</p>
