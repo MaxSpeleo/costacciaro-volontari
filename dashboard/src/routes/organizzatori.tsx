@@ -37,6 +37,7 @@ import { loadOperationalDashboard,
   pairOrganizerDevice, resolveOrganizerDevice,
   loadDashboardMessagesV2, archiveDashboardMessage,
   loadVolunteerInboxMessagesV2, archiveVolunteerInboxMessage,
+  dashboardArchivePreviousDay,
   type DashboardMessageSummary, type VolunteerMessage, type VolunteerInboxMessage } from "@/lib/dashboard-operational";
 
 export const Route = createFileRoute("/organizzatori")({
@@ -1638,6 +1639,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setVolunteerPairPhone4("");
     setVolunteerPairError("");
   }
+
+  useEffect(() => {
+    if (volunteerOnly || dataMode !== "live" || !openAccess) return;
+    let cancelled = false;
+
+    async function archivePreviousDayMessages() {
+      try {
+        await dashboardArchivePreviousDay();
+        if (cancelled) return;
+        const [sent, inbox] = await Promise.all([
+          loadDashboardMessagesV2(false),
+          loadVolunteerInboxMessagesV2(false),
+        ]);
+        if (!cancelled) {
+          setDashboardMessages(sent);
+          setVolunteerInbox(inbox);
+        }
+      } catch {}
+    }
+
+    archivePreviousDayMessages();
+    return () => { cancelled = true; };
+  }, [volunteerOnly, dataMode, openAccess]);
 
   useEffect(() => {
     if (volunteerOnly || dataMode !== "live") return;
