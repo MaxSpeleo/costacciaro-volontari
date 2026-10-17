@@ -3706,7 +3706,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${attentionIssueCount ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"} ${activeWorkspace !== "priorities-workspace" ? "hidden" : ""}`}>
-          {(guideChoice === "priority" || guideChoice === "regia") ? contextGuide() : null}
+          {guideChoice === "priority" ? contextGuide() : null}
           <div className="flex items-center gap-2">
             {attentionIssueCount ? <AlertTriangle className="size-5 text-[#c76476]" /> : <CheckCircle2 className="size-5 text-emerald-600" />}
             <div>
