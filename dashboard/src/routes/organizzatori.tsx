@@ -1269,7 +1269,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [editActivityValue, setEditActivityValue] = useState("");
   const [mobileTab, setMobileTab] = useState<"panoramica" | "turno" | "persone" | "squadra">("panoramica");
   const [peopleFilterOpen, setPeopleFilterOpen] = useState(false);
-  const [suggestedMemberIds, setSuggestedMemberIds] = useState<string[]>([]);
+  const [proposal, setProposal] = useState<{ baseline: string; changes: { teamId: string; volunteerIds: string[] }[] } | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [personalOpen, setPersonalOpen] = useState(volunteerOnly);
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
@@ -2055,11 +2055,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     },
     suggest: {
       title: "Proposta automatica",
-      body: "Propone persone compatibili con data, fascia e attività. È un aiuto alla scelta: controlla sempre la squadra prima di considerarla definitiva.",
+      body: "Inserisci prima quante persone servono per turno. Il sistema propone volontari disponibili e con preferenze compatibili, limitando il carico. Non modifica nulla finché un organizzatore non conferma; squadre fissate e assegnazioni esistenti restano intatte.",
     },
     pin: {
       title: "Fissa squadra",
-      body: "Segna la squadra come stabilizzata per distinguerla da quelle ancora in lavorazione. Puoi sbloccarla in seguito.",
+      body: "Blocca la squadra e la esclude dai suggerimenti automatici. Le persone già assegnate non vengono mai rimosse dalle proposte.",
     },
     live: {
       title: "Modalità operativa",
@@ -2191,29 +2191,49 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   function autoSuggest() {
-    if (suggestedMemberIds.length > 0) {
-      const removeIds = new Set(suggestedMemberIds);
-      setTeams((current) => current.map((team) =>
-        team.id === selectedTeam.id ? { ...team, memberIds: team.memberIds.filter((id) => !removeIds.has(id)) } : team
-      ));
-      setSuggestedMemberIds([]);
-      setFeedback("Proposta automatica annullata.");
+    // Compute a cross-team preview; never modify teams before approval.
+    const baseline = JSON.stringify(teams);
+    const used = new Map<string, number>();
+    const occupied = new Set<string>();
+    for (const team of teams) for (const id of team.memberIds) {
+      used.set(id, (used.get(id) ?? 0) + 1);
+      occupied.add(team.day + "|" + team.slot + "|" + id);
+    }
+    const changes: { teamId: string; volunteerIds: string[] }[] = [];
+    for (const team of [...teams].filter((t) => !t.pinned && t.target > 0 && t.memberIds.length < t.target)
+      .sort((a, b) => a.memberIds.length / a.target - b.memberIds.length / b.target)) {
+      const needed = team.target - team.memberIds.length;
+      const choices = activeVolunteers.filter((v) => {
+        const preferred = v.activities.includes(team.activity) || v.activities.includes(team.activity.split(" — ")[0]);
+        return preferred && v.days.includes(team.day) && v.slots.includes(team.slot)
+          && !occupied.has(team.day + "|" + team.slot + "|" + v.id)
+          && (used.get(v.id) ?? 0) < 3;
+      }).sort((a,b) => (used.get(a.id) ?? 0) - (used.get(b.id) ?? 0) || b.priority - a.priority);
+      const volunteerIds = choices.slice(0, needed).map((v) => v.id);
+      volunteerIds.forEach((id) => {
+        used.set(id, (used.get(id) ?? 0) + 1);
+        occupied.add(team.day + "|" + team.slot + "|" + id);
+      });
+      if (volunteerIds.length) changes.push({ teamId: team.id, volunteerIds });
+    }
+    setProposal(changes.length ? { baseline, changes } : null);
+    setFeedback(changes.length ? "Proposta pronta: controlla i nominativi e conferma solo se corretti." : "Nessuna proposta: verifica fabbisogni, preferenze e disponibilità dei volontari.");
+  }
+
+  function confirmProposal() {
+    if (!proposal) return;
+    if (JSON.stringify(teams) !== proposal.baseline) {
+      setProposal(null);
+      setFeedback("I turni sono cambiati: genera nuovamente la proposta per non sovrascrivere il lavoro altrui.");
       return;
     }
-    const busy = new Set(teams.filter((team) => team.id !== selectedTeam.id && team.day === day && team.slot === slot).flatMap((team) => team.memberIds));
-    const existing = selectedTeam.memberIds.filter((id) => !busy.has(id));
-    const missing = Math.max(0, selectedTeam.target - existing.length);
-    const additions = compatible
-      .filter((v) => !busy.has(v.id) && !existing.includes(v.id))
-      .slice(0, missing)
-      .map((v) => v.id);
-    const suggested = [...existing, ...additions];
-    setSuggestedMemberIds(additions);
-    setFeedback(additions.length ? `✓ Proposte ${additions.length} persone compatibili. Controlla la squadra prima di fissarla.` : "Nessuna nuova persona compatibile da proporre.");
-    setTeams((current) => selectedTeam.id === "__draft__"
-      ? [...current, { ...selectedTeam, id: `team-${Date.now()}`, memberIds: suggested }]
-      : current.map((team) => team.id === selectedTeam.id ? { ...team, memberIds: suggested } : team));
-    if (window.innerWidth < 1024) setMobileTab("squadra");
+    const changes = new Map(proposal.changes.map((item) => [item.teamId, item.volunteerIds]));
+    setTeams((current) => current.map((team) => {
+      if (team.pinned || !changes.has(team.id)) return team;
+      return { ...team, memberIds: [...team.memberIds, ...changes.get(team.id)!.filter((id) => !team.memberIds.includes(id))] };
+    }));
+    setProposal(null);
+    setFeedback("Proposta confermata. I nominativi sono stati aggiunti senza sostituire le assegnazioni precedenti.");
   }
 
   function updateVolunteerOpsLocal(id: string, patch: Partial<Pick<Volunteer, "status" | "confirmed" | "priority" | "internalNotes" | "tags">>) {
@@ -3720,9 +3740,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <button
                   type="button"
                   onClick={autoSuggest}
-                  className={`min-h-9 border-2 border-[#b85668] px-2.5 text-[10px] font-black uppercase sm:text-xs lg:min-h-11 lg:px-4 ${suggestedMemberIds.length ? "bg-transparent text-[#c76476]" : "bg-[#b85668] text-white"}`}
+                  className="min-h-9 border-2 border-[#b85668] bg-[#b85668] px-2.5 text-[10px] font-black uppercase text-white sm:text-xs lg:min-h-11 lg:px-4"
                 >
-                  {suggestedMemberIds.length ? "Annulla proposta" : "Proponi persone"}
+                  Proponi assegnazioni
                 </button>
                 <button type="button" onClick={() => setHelpTopic("suggest")} className="min-h-9 min-w-9 border-2 border-[#b85668] px-2" aria-label="Spiega Proponi persone">
                   <CircleHelp className="mx-auto size-4" />
@@ -3730,6 +3750,27 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               </div>
             </div>
 
+            {proposal ? (
+              <div className={`mb-3 border-2 border-amber-500 p-3 text-xs ${panelSoft}`}>
+                <div className="mb-2 flex items-center gap-2 font-black uppercase">Anteprima non salvata
+                  <button type="button" onClick={() => setHelpTopic("suggest")} aria-label="Spiegazione proposta"><CircleHelp className="size-4" /></button>
+                </div>
+                <div className="max-h-48 space-y-2 overflow-y-auto">
+                  {proposal.changes.map((change) => {
+                    const team = teams.find((t) => t.id === change.teamId);
+                    return <div key={change.teamId} className="border-b pb-2">
+                      <strong>{team?.day} · {team?.slot} · {team?.activity}</strong>
+                      <p>{change.volunteerIds.map((id) => activeVolunteers.find((v) => v.id === id)?.name || id).join(", ")}</p>
+                    </div>;
+                  })}
+                </div>
+                <p className="mt-2 opacity-75">Nessuna persona già assegnata viene rimossa. Il limite provvisorio è 3 turni per persona; non equivale a un limite orario.</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" onClick={confirmProposal} className="min-h-10 border-2 border-emerald-600 px-3 font-black">Conferma assegnazioni</button>
+                  <button type="button" onClick={() => setProposal(null)} className="min-h-10 border-2 border-[#b85668] px-3 font-bold">Annulla proposta</button>
+                </div>
+              </div>
+            ) : null}
             <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-2">
               {compatible.map((v) => {
                 const inTeam = selectedTeam.memberIds.includes(v.id);
@@ -3802,7 +3843,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <Info label="Attività" value={selectedTeam.activity} light={isLight} />
               <div><dt className={`text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Persone necessarie</dt>
                 <input type="number" min={0} max={99} value={selectedTeam.target} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ target: Math.max(0, Number(e.target.value) || 0) })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
-                <div className={`mt-1 text-[9px] ${muted}`}>0 = fabbisogno ancora da definire</div>
+                <div className={`mt-1 text-[9px] ${muted}`}>0 = fabbisogno ancora da definire: non riceve proposte</div>
               </div>
               <div className="col-span-2"><dt className={`text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Nome squadra</dt>
                 <input value={selectedTeam.name} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ name: e.target.value })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
