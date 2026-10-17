@@ -2403,7 +2403,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     { title: "Controlla giorno e fascia", details: "Usa i due campi evidenziati. Dopo aver verificato le scelte, premi Continua.", target: "turno-workspace" as const, focus: "guide-date" },
     { title: "Scegli l'attività", details: "Seleziona l'attività nel menu evidenziato; poi premi Continua.", target: "people-workspace" as const, focus: "guide-activity-input" },
     { title: "Trova le persone", details: "Controlla le disponibilità nell'elenco e seleziona i volontari per la squadra.", target: "people-workspace" as const, focus: "guide-people" },
-    { title: "Verifica il turno", details: "Riapri il riepilogo turno e controlla che squadra e copertura siano corrette.", target: "turno-workspace" as const, focus: "guide-review" },
+    { title: "Controlla la squadra", details: "Controlla qui a destra i nominativi assegnati e i posti ancora scoperti. Puoi terminare senza tornare all’inizio.", target: "people-workspace" as const, focus: "guide-team" },
   ];
   const guideNewMembers = selectedTeam.memberIds.filter((id) => !guidedStartingMemberIds.includes(id));
   const guideCanContinue = guidedAssignmentStep === 0 ? Boolean(day && slot)
@@ -3542,18 +3542,19 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           <button type="button" onClick={() => setGuidedMode(true)} className="mb-3 flex min-h-10 items-center gap-2 border-2 border-[#b85668] px-3 text-xs font-black uppercase"><CircleHelp className="size-4" /> Apri guida rapida</button>
         )}
         {guidedAssignmentStep !== null && activeWorkspace !== null && !volunteerOnly ? (
-          <aside role="region" aria-label="Guida assegnazione attiva" className={`fixed bottom-4 right-4 z-50 w-[min(350px,calc(100vw-32px))] border-2 border-amber-400 p-3 shadow-2xl ${isLight ? "bg-white text-ink" : "bg-ink text-paper"}`}>
+          <aside role="region" aria-label="Guida assegnazione attiva" className={`fixed bottom-4 right-4 z-40 w-[min(310px,calc(100vw-32px))] border-2 border-amber-400 p-3 shadow-2xl ${isLight ? "bg-white text-ink" : "bg-ink text-paper"}`}>
             <p className="text-xs font-black uppercase">Guida · Passaggio {guidedAssignmentStep + 1} di {assignmentGuide.length}</p>
             <p className="mt-1 text-sm font-black">{assignmentGuide[guidedAssignmentStep].title}</p>
             <p className="mt-1 text-xs">{assignmentGuide[guidedAssignmentStep].details}</p>
-            {guidedAssignmentStep === 2 ? <p className="mt-2 text-xs font-bold">Nuovi volontari assegnati in questa procedura: {guideNewMembers.length}</p> : null}
+            {guidedAssignmentStep === 2 ? <p className="mt-2 text-xs font-bold">Nuovi volontari assegnati: {guideNewMembers.length}. I volontari già occupati richiedono conferma prima dello spostamento.</p> : null}
+            {guidedAssignmentStep === 3 ? <div className="mt-2 border-t border-amber-400/50 pt-2 text-xs font-bold">{day} · {slot} · {activity}<p className="mt-1">In squadra: {selectedTeam.memberIds.length} / {selectedTeam.target} · Da coprire: {Math.max(0,selectedTeam.target-selectedTeam.memberIds.length)}</p></div> : null}
             {!guideCanContinue ? <p className="mt-2 text-xs text-amber-400">Completa prima l’operazione evidenziata. Per assegnare persone, usa i comandi esistenti.</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
               {guidedAssignmentStep < assignmentGuide.length - 1 ? (
                 <button type="button" disabled={!guideCanContinue} onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white disabled:opacity-40">Continua →</button>
               ) : (
-                <button type="button" disabled={!guideCanContinue} onClick={() => { setGuidedAssignmentStep(null); goToDashboardTop(); }} className="min-h-11 disabled:opacity-40 bg-[#b85668] px-3 text-xs font-black text-white">Termina</button>
+                <button type="button" disabled={!guideCanContinue} onClick={() => { setGuidedAssignmentStep(null); }} className="min-h-11 disabled:opacity-40 bg-[#b85668] px-3 text-xs font-black text-white">Termina</button>
               )}
               <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-11 px-2 text-xs underline">Esci</button>
             </div>
@@ -3777,7 +3778,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </button>
         ) : null}
 
-        <section id="turno-workspace" id="guide-review" className={`mt-3 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""} ${activeWorkspace !== "turno-workspace" ? "hidden" : ""}`}>
+        <section id="turno-workspace" className={`mt-3 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""} ${activeWorkspace !== "turno-workspace" ? "hidden" : ""}`}>
           {focusContext ? (
             <div role="status" className={`mb-3 border-2 border-[#b85668] p-3 ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}>
               <div className="flex items-center gap-1"><p className="text-[10px] font-black uppercase text-[#c76476]">Stai gestendo questo punto</p><button type="button" onClick={() => setHelpTopic("turn")} aria-label="Spiega gestione turno" className="rounded-full p-1"><CircleHelp className="size-4" /></button></div>
@@ -3832,7 +3833,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-4 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
-          <div id="guide-people" className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${guidedAssignmentStep === 2 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
+          <div id="guide-people" className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
             {focusContext ? <div role="status" className={`relative z-0 mb-3 border-2 border-[#b85668] p-3 text-xs font-bold ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}><p className="mb-1 text-[10px] font-black uppercase text-[#c76476]">Perché sei qui</p>{focusContext}</div> : null}
             <div className="mb-2 flex items-center justify-between gap-2">
               <div>
@@ -3887,7 +3888,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                     draggable
                     onDragStart={(e) => e.dataTransfer.setData("text/plain", v.id)}
                     onClick={() => toggleMember(v.id)}
-                    className={`w-full border-2 p-2 text-left transition lg:p-3 ${inTeam ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-ink/10 hover:border-[#b85668]/55" : "border-paper/15 hover:border-[#b85668]/55"}`}
+                    className={`w-full border-2 p-2 text-left transition lg:p-3 ${guidedAssignmentStep === 2 && !inTeam && !conflictTeam ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-transparent " : ""} ${inTeam ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-ink/10 hover:border-[#b85668]/55" : "border-paper/15 hover:border-[#b85668]/55"}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -3912,8 +3913,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
           </div>
 
-          <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
-            className={`flex flex-col border-2 p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
+          <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
+            className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Squadra del turno</p>
