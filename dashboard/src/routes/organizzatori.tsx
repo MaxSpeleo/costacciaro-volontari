@@ -2399,15 +2399,20 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   const assignmentGuide = [
-    { title: "Scegli il turno", details: "Imposta giorno, fascia e attività; verifica il luogo e il numero di persone necessarie.", target: "turno-workspace" as const },
-    { title: "Controlla le priorità", details: "Verifica posti mancanti e possibili criticità prima di assegnare.", target: "priorities-workspace" as const },
-    { title: "Trova volontari compatibili", details: "Apri l'elenco persone e verifica le disponibilità e gli eventuali impegni sovrapposti.", target: "people-workspace" as const },
-    { title: "Assegna e controlla", details: "Effettua l'assegnazione nella sezione persone, poi ricontrolla squadra e copertura. Nessuna modifica è automatica.", target: "people-workspace" as const },
+    { title: "Controlla giorno e fascia", details: "Usa i due campi evidenziati. Dopo aver verificato le scelte, premi Continua.", target: "turno-workspace" as const, focus: "guide-shift" },
+    { title: "Scegli l'attività", details: "Seleziona l'attività nel menu evidenziato; poi premi Continua.", target: "people-workspace" as const, focus: "guide-activity" },
+    { title: "Trova le persone", details: "Controlla le disponibilità nell'elenco e seleziona i volontari per la squadra.", target: "people-workspace" as const, focus: "guide-people" },
+    { title: "Verifica il turno", details: "Riapri il riepilogo turno e controlla che squadra e copertura siano corrette.", target: "turno-workspace" as const, focus: "guide-review" },
   ];
+  const guideCanContinue = guidedAssignmentStep === null || guidedAssignmentStep === 0 ? Boolean(day && slot)
+    : guidedAssignmentStep === 1 ? Boolean(activity) : true;
   function navigateAssignmentGuide(step: number) {
     const next = Math.max(0, Math.min(step, assignmentGuide.length - 1));
     setGuidedAssignmentStep(next);
     navigateDashboardSection(assignmentGuide[next].target);
+    window.setTimeout(() => {
+      document.getElementById(assignmentGuide[next].focus)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   }
 
   function guideTo(choice: typeof guideChoice) {
@@ -3513,7 +3518,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
                     {guidedAssignmentStep < assignmentGuide.length - 1 ? (
-                      <button type="button" onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Prossimo passaggio →</button>
+                      <button type="button" disabled={!guideCanContinue} onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white disabled:opacity-40">Continua passaggio →</button>
                     ) : (
                       <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Ho verificato la squadra</button>
                     )}
@@ -3552,7 +3557,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
               {guidedAssignmentStep < assignmentGuide.length - 1 ? (
-                <button type="button" onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Prossimo →</button>
+                <button type="button" disabled={!guideCanContinue} onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white disabled:opacity-40">Continua →</button>
               ) : (
                 <button type="button" onClick={() => { setGuidedAssignmentStep(null); goToDashboardTop(); }} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Termina</button>
               )}
@@ -3700,7 +3705,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               </div>
               <div className={`text-xs font-bold ${mutedStrong}`}>{availableUnassignedCount} disponibili non assegnati</div>
             </div>
-            <div className={`mt-3 grid gap-2 border-y py-3 sm:grid-cols-[1fr_1fr_auto] ${isLight ? "border-ink/10" : "border-paper/10"}`}>
+            <div id="guide-shift" className={`mt-3 grid gap-2 border-y py-3 sm:grid-cols-[1fr_1fr_auto] ${guidedAssignmentStep === 0 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${isLight ? "border-ink/10" : "border-paper/10"}`}>
               <Select label="Data" value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
               <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
               <div className={`self-end pb-2 text-[10px] font-bold sm:text-xs ${muted}`}>Poi scegli l’attività qui sotto ↓</div>
@@ -3778,7 +3783,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </button>
         ) : null}
 
-        <section id="turno-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""} ${activeWorkspace !== "turno-workspace" ? "hidden" : ""}`}>
+        <section id="turno-workspace" className={`mt-3 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""} ${activeWorkspace !== "turno-workspace" ? "hidden" : ""}`}>
           {focusContext ? (
             <div role="status" className={`mb-3 border-2 border-[#b85668] p-3 ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}>
               <div className="flex items-center gap-1"><p className="text-[10px] font-black uppercase text-[#c76476]">Stai gestendo questo punto</p><button type="button" onClick={() => setHelpTopic("turn")} aria-label="Spiega gestione turno" className="rounded-full p-1"><CircleHelp className="size-4" /></button></div>
@@ -3794,7 +3799,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:gap-3">
             <Select label="Data" value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
             <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
-            <div className="border-l-4 pl-2" style={{ borderColor: paletteFor(activity).accent }}>
+            <div id="guide-activity" className={`border-l-4 pl-2 ${guidedAssignmentStep === 1 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""}`} style={{ borderColor: paletteFor(activity).accent }}>
               <Select label="Attività" value={activity} onChange={(value) => { setActivity(value); setFocusContext(""); }} options={activities} inputClass={input} />
             </div>
             <label className="col-span-2 text-[11px] sm:text-xs lg:col-span-1">
@@ -3833,7 +3838,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-4 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
-          <div className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
+          <div id="guide-people" className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${guidedAssignmentStep === 2 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
             {focusContext ? <div role="status" className={`relative z-0 mb-3 border-2 border-[#b85668] p-3 text-xs font-bold ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}><p className="mb-1 text-[10px] font-black uppercase text-[#c76476]">Perché sei qui</p>{focusContext}</div> : null}
             <div className="mb-2 flex items-center justify-between gap-2">
               <div>
