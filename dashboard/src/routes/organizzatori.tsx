@@ -2222,6 +2222,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <div>
                 <img
                   src={costacciaroLogoDataUri}
+                  style={{ filter: "brightness(0) saturate(100%) invert(26%) sepia(86%) saturate(3386%) hue-rotate(330deg) brightness(98%) contrast(93%)" }}
                   alt="Costacciaro 2026"
                   className="h-auto w-[190px] max-w-[45vw] object-contain object-left sm:w-[260px]"
                 />
@@ -2552,6 +2553,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <div className="flex h-14 w-28 shrink-0 items-center justify-start sm:h-24 sm:w-48 lg:h-28 lg:w-56">
                 <img
                   src={costacciaroLogoDataUri}
+                  style={{ filter: "brightness(0) saturate(100%) invert(26%) sepia(86%) saturate(3386%) hue-rotate(330deg) brightness(98%) contrast(93%)" }}
                   alt="Costacciaro 2026"
                   className="h-auto w-full max-w-[220px] object-contain object-left sm:max-w-[360px]"
                 />
