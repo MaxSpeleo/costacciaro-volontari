@@ -2342,78 +2342,147 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 ) : null}
 
                 {volunteerOnly && volunteerDeviceLinked ? (
-                  <div className={`mt-3 border-2 p-4 ${panel}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi</p>
-                        <h3 className="text-lg font-black uppercase">Comunicazioni per te</h3>
-                      </div>
-                      <div className="flex items-center gap-2">
+                  <>
+                    <div className={`sticky top-0 z-20 mt-3 border-2 p-2 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           type="button"
-                          onClick={() => setSoundAlertsEnabled((current) => !current)}
-                          className={`border px-2 py-1 text-[9px] font-black uppercase ${soundAlertsEnabled ? "border-emerald-600 text-emerald-600" : ""}`}
-                          title="Avvisi sonori mentre Il mio Costacciaro è aperto"
+                          onClick={() => {
+                            setVolunteerMessagesOpen(false);
+                            setVolunteerReplyOpen(false);
+                            setVolunteerAllTurnsOpen(false);
+                            document.getElementById("volunteer-turns")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                          className="min-h-10 border px-2 text-[10px] font-black uppercase"
                         >
-                          {soundAlertsEnabled ? "Suono on" : "Suono off"}
+                          I miei turni
                         </button>
-                        <MessageSquare className="size-5 text-[#c76476]" />
-                      </div>
-                    </div>
-
-                    <div className="mt-3 space-y-2">
-                      {volunteerMessages.length ? volunteerMessages.map((m) => (
-                        <div key={m.id} className={`border-2 p-3 ${m.urgent ? "border-[#b85668]" : panelSoft}`}>
-                          <div className="flex items-start justify-between gap-2">
-                            <strong className="text-sm">{m.title}</strong>
-                            <span className={`text-[9px] font-black uppercase ${m.readAt ? "text-emerald-600" : "text-[#c76476]"}`}>
-                              {m.readAt ? "Letto" : "Nuovo"}
+                        <button
+                          type="button"
+                          onClick={openVolunteerMessages}
+                          className={`relative min-h-10 border px-2 text-[10px] font-black uppercase ${volunteerMessagesOpen ? "bg-[#b85668] text-white border-[#b85668]" : ""}`}
+                        >
+                          Messaggi
+                          {unreadVolunteerMessageCount ? (
+                            <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[#b85668] px-1.5 py-0.5 text-[9px] text-white">
+                              {unreadVolunteerMessageCount}
                             </span>
-                          </div>
-                          <p className="mt-2 text-sm leading-relaxed">{m.body}</p>
-                          {m.urgent ? (
-                            <div className="mt-3">
-                              {m.acknowledgedAt ? (
-                                <span className="inline-flex items-center gap-1 border border-emerald-600 px-2 py-1 text-xs font-black text-emerald-600">
-                                  <CheckCheck className="size-4" /> Confermato
-                                </span>
-                              ) : (
-                                <button type="button" onClick={() => acknowledgeVolunteerMessage(m.id)}
-                                  className="inline-flex min-h-10 items-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-3 text-xs font-black uppercase text-white">
-                                  <Check className="size-4" /> Confermo di aver letto
-                                </button>
-                              )}
-                            </div>
+                          ) : unconfirmedVolunteerMessageCount ? (
+                            <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full border border-[#b85668] px-1.5 py-0.5 text-[9px]">
+                              {unconfirmedVolunteerMessageCount}
+                            </span>
                           ) : null}
-                        </div>
-                      )) : <p className={`text-sm ${muted}`}>Nessun messaggio per te al momento.</p>}
-                    </div>
-
-                    <div className={`mt-4 border-t pt-4 ${isLight ? "border-ink/15" : "border-paper/15"}`}>
-                      <p className="text-[10px] font-black uppercase text-[#c76476]">Scrivi all'organizzazione</p>
-                      <textarea
-                        value={volunteerReply}
-                        onChange={(e) => setVolunteerReply(e.target.value)}
-                        placeholder="Es. Non riesco ad arrivare per il turno delle 9…"
-                        className={`mt-2 min-h-24 w-full border-2 p-3 text-sm ${input}`}
-                      />
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        </button>
                         <button
                           type="button"
-                          onClick={sendVolunteerReply}
-                          disabled={volunteerReplyBusy || !volunteerReply.trim()}
-                          className="inline-flex min-h-10 items-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-3 text-xs font-black uppercase text-white disabled:opacity-50"
+                          onClick={() => setVolunteerReplyOpen((current) => !current)}
+                          className={`min-h-10 border px-2 text-[10px] font-black uppercase ${volunteerReplyOpen ? "bg-[#b85668] text-white border-[#b85668]" : ""}`}
                         >
-                          <Send className="size-4" />
-                          {volunteerReplyBusy ? "Invio…" : "Invia"}
+                          Scrivi
                         </button>
-                        {volunteerReplyFeedback ? <span className={`text-xs font-bold ${volunteerReplyFeedback.includes("inviato") ? "text-emerald-600" : "text-[#c76476]"}`}>{volunteerReplyFeedback}</span> : null}
                       </div>
                     </div>
-                  </div>
+
+                    {volunteerMessagesOpen ? (
+                      <div className={`mt-3 border-2 p-4 ${panel}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi</p>
+                            <h3 className="text-lg font-black uppercase">Comunicazioni per te</h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSoundAlertsEnabled((current) => !current)}
+                              className={`border px-2 py-1 text-[9px] font-black uppercase ${soundAlertsEnabled ? "border-emerald-600 text-emerald-600" : ""}`}
+                            >
+                              {soundAlertsEnabled ? "Suono on" : "Suono off"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setVolunteerMessagesOpen(false)}
+                              className="grid size-9 place-items-center border border-[#b85668]"
+                              aria-label="Chiudi messaggi"
+                            >
+                              <X className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 space-y-2">
+                          {volunteerMessages.length ? volunteerMessages.map((m) => (
+                            <div key={m.id} className={`border-2 p-3 ${m.urgent ? "border-[#b85668]" : panelSoft}`}>
+                              <div className="flex items-start justify-between gap-2">
+                                <strong className="text-sm">{m.title}</strong>
+                                <span className={`text-[9px] font-black uppercase ${m.readAt ? "text-emerald-600" : "text-[#c76476]"}`}>
+                                  {m.readAt ? "Letto" : "Nuovo"}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm leading-relaxed">{m.body}</p>
+                              {m.urgent ? (
+                                <div className="mt-3">
+                                  {m.acknowledgedAt ? (
+                                    <span className="inline-flex items-center gap-1 border border-emerald-600 px-2 py-1 text-xs font-black text-emerald-600">
+                                      <CheckCheck className="size-4" /> Confermato
+                                    </span>
+                                  ) : (
+                                    <button type="button" onClick={() => acknowledgeVolunteerMessage(m.id)}
+                                      className="inline-flex min-h-10 items-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-3 text-xs font-black uppercase text-white">
+                                      <Check className="size-4" /> Confermo di aver letto
+                                    </button>
+                                  )}
+                                </div>
+                              ) : null}
+                            </div>
+                          )) : <p className={`text-sm ${muted}`}>Nessun messaggio per te al momento.</p>}
+                        </div>
+                      </div>
+                    ) : unreadVolunteerMessageCount ? (
+                      <button
+                        type="button"
+                        onClick={openVolunteerMessages}
+                        className="mt-3 flex w-full items-center justify-between border-2 border-[#b85668] px-3 py-2 text-left"
+                      >
+                        <span>
+                          <span className="block text-[10px] font-black uppercase text-[#c76476]">Nuovi messaggi</span>
+                          <span className="text-sm font-bold">{unreadVolunteerMessageCount} da leggere</span>
+                        </span>
+                        <MessageSquare className="size-5" />
+                      </button>
+                    ) : null}
+
+                    {volunteerReplyOpen ? (
+                      <div className={`mt-3 border-2 p-4 ${panel}`}>
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-black uppercase text-[#c76476]">Scrivi all'organizzazione</p>
+                          <button type="button" onClick={() => setVolunteerReplyOpen(false)} className="grid size-9 place-items-center border border-[#b85668]" aria-label="Chiudi">
+                            <X className="size-4" />
+                          </button>
+                        </div>
+                        <textarea
+                          value={volunteerReply}
+                          onChange={(e) => setVolunteerReply(e.target.value)}
+                          placeholder="Es. Non riesco ad arrivare per il turno delle 9…"
+                          className={`mt-2 min-h-24 w-full border-2 p-3 text-sm ${input}`}
+                        />
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={sendVolunteerReply}
+                            disabled={volunteerReplyBusy || !volunteerReply.trim()}
+                            className="inline-flex min-h-10 items-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-3 text-xs font-black uppercase text-white disabled:opacity-50"
+                          >
+                            <Send className="size-4" />
+                            {volunteerReplyBusy ? "Invio…" : "Invia"}
+                          </button>
+                          {volunteerReplyFeedback ? <span className={`text-xs font-bold ${volunteerReplyFeedback.includes("inviato") ? "text-emerald-600" : "text-[#c76476]"}`}>{volunteerReplyFeedback}</span> : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
 
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div id="volunteer-turns" className="mt-3 grid gap-3 md:grid-cols-2">
                   <div className={`border-2 p-4 ${panel}`}>
                     <p className="text-[10px] font-black uppercase text-[#c76476]">Prossimo turno</p>
                     {personalNextTeam ? (
@@ -2429,15 +2498,27 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   </div>
 
                   <div className={`border-2 p-4 ${panel}`}>
-                    <p className="text-[10px] font-black uppercase text-[#c76476]">Tutti i miei turni</p>
-                    <div className="mt-2 space-y-2">
-                      {personalTeams.length ? personalTeams.map((team) => (
-                        <div key={team.id} className={`border p-3 ${panelSoft}`}>
-                          <strong className="block text-sm uppercase">{team.day} · {team.slot}</strong>
-                          <span className="mt-1 block text-xs">{team.activity} · {team.place}</span>
-                        </div>
-                      )) : <p className={`text-xs ${muted}`}>Nessuna assegnazione.</p>}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setVolunteerAllTurnsOpen((current) => !current)}
+                      className="flex w-full items-center justify-between gap-3 text-left"
+                    >
+                      <span>
+                        <span className="block text-[10px] font-black uppercase text-[#c76476]">Tutti i miei turni</span>
+                        <span className={`mt-1 block text-xs ${muted}`}>{personalTeams.length ? `${personalTeams.length} assegnazioni` : "Nessuna assegnazione"}</span>
+                      </span>
+                      <span className="text-lg font-black">{volunteerAllTurnsOpen ? "−" : "+"}</span>
+                    </button>
+                    {volunteerAllTurnsOpen ? (
+                      <div className="mt-3 space-y-2">
+                        {personalTeams.length ? personalTeams.map((team) => (
+                          <div key={team.id} className={`border p-3 ${panelSoft}`}>
+                            <strong className="block text-sm uppercase">{team.day} · {team.slot}</strong>
+                            <span className="mt-1 block text-xs">{team.activity} · {team.place}</span>
+                          </div>
+                        )) : <p className={`text-xs ${muted}`}>Nessuna assegnazione.</p>}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
