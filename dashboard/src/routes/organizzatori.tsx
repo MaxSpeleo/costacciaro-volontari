@@ -1645,8 +1645,14 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
     async function refreshInboxBadge() {
       try {
-        const inbox = await loadVolunteerInboxMessages();
-        if (!cancelled) setVolunteerInbox(inbox);
+        const [sent, inbox] = await Promise.all([
+          loadDashboardMessagesV2(false),
+          loadVolunteerInboxMessagesV2(false),
+        ]);
+        if (!cancelled) {
+          setDashboardMessages(sent);
+          setVolunteerInbox(inbox);
+        }
       } catch {}
     }
 
@@ -1665,8 +1671,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     async function refreshMessages() {
       try {
         const [sent, inbox] = await Promise.all([
-          loadDashboardMessages(),
-          loadVolunteerInboxMessages(),
+          loadDashboardMessagesV2(false),
+          loadVolunteerInboxMessagesV2(false),
         ]);
         if (cancelled) return;
         setDashboardMessages(sent);
@@ -1809,7 +1815,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       setMessageTargetQuery("");
       setMessageTargetTeamId("");
       setFeedback(`✓ Messaggio inviato a ${result.recipient_count} destinatari.`);
-      setDashboardMessages(await loadDashboardMessages());
+      setDashboardMessages(await loadDashboardMessagesV2(false));
     } catch {
       setMessageError("Invio non riuscito.");
     } finally {
@@ -1859,9 +1865,43 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   async function markInboxRead(id: string) {
     try {
       await markVolunteerInboxRead(id);
-      setVolunteerInbox(await loadVolunteerInboxMessages());
+      setVolunteerInbox(await loadVolunteerInboxMessagesV2(false));
     } catch {}
   }
+
+  async function setSentMessageArchived(id: string, archived: boolean) {
+    try {
+      await archiveDashboardMessage(id, archived);
+      const [active, archive] = await Promise.all([
+        loadDashboardMessagesV2(false),
+        loadDashboardMessagesV2(true),
+      ]);
+      setDashboardMessages(active);
+      setArchivedDashboardMessages(archive);
+    } catch {
+      setMessageError("Archiviazione messaggio non riuscita.");
+    }
+  }
+
+  async function setInboxMessageArchived(id: string, archived: boolean) {
+    try {
+      await archiveVolunteerInboxMessage(id, archived);
+      const [active, archive] = await Promise.all([
+        loadVolunteerInboxMessagesV2(false),
+        loadVolunteerInboxMessagesV2(true),
+      ]);
+      setVolunteerInbox(active);
+      setArchivedVolunteerInbox(archive);
+    } catch {
+      setMessageError("Archiviazione messaggio non riuscita.");
+    }
+  }
+
+  useEffect(() => {
+    if (!messagesOpen || dataMode !== "live" || volunteerOnly) return;
+    if (sentArchiveOpen) loadDashboardMessagesV2(true).then(setArchivedDashboardMessages).catch(() => {});
+    if (inboxArchiveOpen) loadVolunteerInboxMessagesV2(true).then(setArchivedVolunteerInbox).catch(() => {});
+  }, [messagesOpen, sentArchiveOpen, inboxArchiveOpen, dataMode, volunteerOnly]);
 
   const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
   const messageVolunteerMatches = useMemo(() => {
