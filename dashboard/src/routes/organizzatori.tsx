@@ -1333,7 +1333,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [contextGuideStep, setContextGuideStep] = useState<number | null>(null);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
-  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns">("overview");
+  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns" | "inbox" | "sent" | "personal" | "preferences">("overview");
   const [guideHighlight, setGuideHighlight] = useState("");
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
@@ -2466,6 +2466,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     activities: ["Consulta le attività", "Individua l'attività o il sottogruppo da gestire.", "Verifica i cambiamenti prima di chiudere."],
     regia: ["Apri le priorità operative", "Controlla turni e squadre da presidiare nella regia.", "Apri il turno interessato e verifica le assegnazioni."],
     myturns: ["Apri l’elenco delle persone", "Cerca il volontario e controlla i turni assegnati.", "Verifica data, fascia e attività; per correggere torna alla gestione squadre."],
+    inbox: ["Apri i messaggi ricevuti", "Leggi le comunicazioni e seleziona quelle da gestire.", "Se opportuno, segna il messaggio come letto o archivialo."],
+    sent: ["Apri i messaggi inviati", "Controlla destinatari e cronologia degli invii.", "Verifica le comunicazioni prima di chiudere."],
+    personal: ["Apri la vista personale", "Consulta i turni e le comunicazioni destinati al volontario.", "Per le modifiche organizzative torna alla gestione squadre."],
+    preferences: ["Consulta le preferenze", "Controlla notifiche sonore, guida e modalità dati.", "Non cambiare PROVA/OPERATIVO senza verificare le conseguenze."],
     overview: ["Panoramica", "Consulta i dati riepilogativi.", "Scegli un'altra operazione quando necessario."],
   } as const;
   function contextGuide() {
@@ -2491,10 +2495,14 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setGuideChoice(choice);
     setHelpTopic(null);
     setDirectoryOpen(choice === "contacts");
-    setMessagesOpen(choice === "messages");
+    setMessagesOpen(choice === "messages" || choice === "inbox" || choice === "sent");
+    if (choice === "inbox") setMessagePane("inbox");
+    if (choice === "sent") setMessagePane("sent");
+    if (choice === "messages") setMessagePane("compose");
+    if (choice === "personal") setPersonalOpen(true);
     setCatalogOpen(choice === "activities");
     setGuideHighlight(choice);
-    if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities") {
+    if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities" || choice === "inbox" || choice === "sent" || choice === "personal" || choice === "preferences") {
       goToDashboardTop();
     } else {
       navigateDashboardSection(choice === "priority" || choice === "regia" ? "priorities-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
@@ -3585,7 +3593,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <button type="button" onClick={() => setGuidedMode(false)} className="min-h-11 border px-2 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
               </div>
             </div>
-            {(guideChoice === "contacts" || guideChoice === "messages" || guideChoice === "activities") && contextGuideStep !== null ? contextGuide() : null}
+            {(guideChoice === "contacts" || guideChoice === "messages" || guideChoice === "activities" || guideChoice === "inbox" || guideChoice === "sent" || guideChoice === "personal" || guideChoice === "preferences") && contextGuideStep !== null ? contextGuide() : null}
             {guideMenuOpen ? (
               <div className="mt-3 grid gap-2 border-t border-amber-400/50 pt-3 sm:grid-cols-2 lg:grid-cols-3">
                 <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
@@ -3600,7 +3608,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   ["regia","Regia operativa","Controlla criticità e turni da presidiare"],
                   ["myturns","Controlla turni di un volontario","Cerca una persona e verifica le assegnazioni"],
                   ["contacts","Trova un contatto","Apri la ricerca dei volontari"],
-                  ["messages","Invia un messaggio","Apri le comunicazioni"],
+                  ["messages","Invia un messaggio","Apri la composizione di un messaggio"],
+                  ["inbox","Leggi messaggi ricevuti","Consulta le risposte e le comunicazioni da leggere"],
+                  ["sent","Controlla messaggi inviati","Visualizza gli invii precedenti"],
+                  ["personal","Visualizza i miei turni","Apri la vista personale del volontario"],
+                  ["preferences","Preferenze e modalità dati","Controlla le impostazioni senza cambiare modalità automaticamente"],
                   ["activities","Gestisci attività","Apri le attività e i sottogruppi"],
                   ["overview","Torna alla panoramica","Mostra il riepilogo principale"]
                 ] as const).map(([id,label,description]) => (
