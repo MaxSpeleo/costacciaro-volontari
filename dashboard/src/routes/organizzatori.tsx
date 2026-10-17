@@ -2408,7 +2408,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const guideNewMembers = selectedTeam.memberIds.filter((id) => !guidedStartingMemberIds.includes(id));
   const guideCanContinue = guidedAssignmentStep === 0 ? Boolean(day && slot)
     : guidedAssignmentStep === 1 ? Boolean(activity)
-    : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? guideNewMembers.length > 0 : false;
+    : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? selectedTeam.memberIds.length > 0 : false;
   function startAssignmentGuide() {
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
     navigateAssignmentGuide(0);
@@ -3546,9 +3546,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <p className="text-xs font-black uppercase">Guida · Passaggio {guidedAssignmentStep + 1} di {assignmentGuide.length}</p>
             <p className="mt-1 text-sm font-black">{assignmentGuide[guidedAssignmentStep].title}</p>
             <p className="mt-1 text-xs">{assignmentGuide[guidedAssignmentStep].details}</p>
-            {guidedAssignmentStep === 2 ? <p className="mt-2 text-xs font-bold">Nuovi volontari assegnati: {guideNewMembers.length}. I volontari già occupati richiedono conferma prima dello spostamento.</p> : null}
+            {guidedAssignmentStep === 2 ? <p className="mt-2 text-xs font-bold">Volontari presenti nella squadra: {selectedTeam.memberIds.length}. Aggiunti rispetto all’avvio: {guideNewMembers.length}. Puoi continuare se la squadra contiene almeno una persona. Gli spostamenti richiedono conferma.</p> : null}
             {guidedAssignmentStep === 3 ? <div className="mt-2 border-t border-amber-400/50 pt-2 text-xs font-bold">{day} · {slot} · {activity}<p className="mt-1">In squadra: {selectedTeam.memberIds.length} / {selectedTeam.target} · Da coprire: {Math.max(0,selectedTeam.target-selectedTeam.memberIds.length)}</p></div> : null}
-            {!guideCanContinue ? <p className="mt-2 text-xs text-amber-400">Completa prima l’operazione evidenziata. Per assegnare persone, usa i comandi esistenti.</p> : null}
+            {!guideCanContinue ? <p className="mt-2 text-xs text-amber-400">Seleziona almeno un volontario per questa squadra, oppure torna indietro per cambiare turno.</p> : null}
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
               {guidedAssignmentStep < assignmentGuide.length - 1 ? (
