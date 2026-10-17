@@ -2401,7 +2401,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   const assignmentGuide = [
     { title: "Controlla giorno e fascia", details: "Usa i due campi evidenziati. Dopo aver verificato le scelte, premi Continua.", target: "turno-workspace" as const, focus: "guide-date" },
-    { title: "Scegli l'attività", details: "Seleziona l'attività nel menu evidenziato; poi premi Continua.", target: "people-workspace" as const, focus: "guide-activity-input" },
+    { title: "Scegli l'attività", details: "Seleziona l'attività nel menu evidenziato; poi premi Continua.", target: "people-workspace" as const, focus: "guide-activity" },
     { title: "Trova le persone", details: "Controlla le disponibilità nell'elenco e seleziona i volontari per la squadra.", target: "people-workspace" as const, focus: "guide-people" },
     { title: "Controlla la squadra", details: "Controlla qui a destra i nominativi assegnati e i posti ancora scoperti. Puoi terminare senza tornare all’inizio.", target: "people-workspace" as const, focus: "guide-team" },
   ];
@@ -2424,9 +2424,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         peoplePane.scrollTop = 0;
         peoplePane.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
-        document.getElementById(assignmentGuide[next].focus)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById(next === 0 ? "guide-shift" : assignmentGuide[next].focus)?.scrollIntoView({ behavior: "instant", block: "center" });
       }
-    }, 250);
+    }, 450);
   }
 
   function guideActions(step: number) {
@@ -3806,7 +3806,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <Select label="Data" value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
             <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
             <div id="guide-activity" className={`border-l-4 pl-2 ${guidedAssignmentStep === 1 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""}`} style={{ borderColor: paletteFor(activity).accent }}>
-              <Select label="Attività" guideId="guide-activity-input" guided={guidedAssignmentStep === 1} value={activity} onChange={(value) => { setActivity(value); setFocusContext(""); }} options={activities} inputClass={input} />
+              <Select label="Attività" value={activity} onChange={(value) => { setActivity(value); setFocusContext(""); }} options={activities} inputClass={input} />
             </div>
             <label className="col-span-2 text-[11px] sm:text-xs lg:col-span-1">
               <span className={`mb-1 flex h-4 items-center ${mutedStrong}`}>Ricerca persona</span>
