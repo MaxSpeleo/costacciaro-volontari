@@ -1327,7 +1327,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [activeWorkspace, setActiveWorkspace] = useState<
     "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace" | null
   >(null);
-  const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | null>(null);
+  const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
@@ -2052,6 +2052,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     team: {
       title: "Squadra",
       body: "Mostra le persone già assegnate al turno. Da qui controlli la copertura, modifichi i dettagli, fissi la squadra quando è stabilizzata e la condividi o esporti.",
+    },
+    staffing: {
+      title: "Fabbisogno del turno",
+      body: "Premi Modifica turno e inserisci quante persone servono. Con 0 il fabbisogno è ancora da definire e il turno non entra nei suggerimenti. Le persone già assegnate restano al loro posto.",
     },
     suggest: {
       title: "Proposta automatica",
@@ -3841,7 +3845,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <Info label="Data" value={selectedTeam.day} light={isLight} />
               <Info label="Fascia" value={selectedTeam.slot} light={isLight} />
               <Info label="Attività" value={selectedTeam.activity} light={isLight} />
-              <div><dt className={`text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Persone necessarie</dt>
+              <div><dt className={`flex items-center gap-1 text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Persone necessarie <button type="button" onClick={() => setHelpTopic("staffing")} aria-label="Spiega fabbisogno del turno"><CircleHelp className="size-3.5" /></button></dt>
                 <input type="number" min={0} max={99} value={selectedTeam.target} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ target: Math.max(0, Number(e.target.value) || 0) })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
                 <div className={`mt-1 text-[9px] ${muted}`}>0 = fabbisogno ancora da definire: non riceve proposte</div>
               </div>
