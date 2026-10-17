@@ -2009,9 +2009,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   const directoryVolunteers = dataMode === "test" ? [...activeVolunteers, testVolunteer] : activeVolunteers;
   const filteredDirectoryVolunteers = directoryVolunteers.filter((v) => {
-    const q = directoryQuery.trim().toLowerCase();
+    const q = directoryQuery.trim().toLocaleLowerCase("it");
     if (!q) return true;
-    return [v.name, v.group, v.phone || "", v.email || ""].join(" ").toLowerCase().includes(q);
+    return [v.name, v.group, v.phone || "", v.email || ""].join(" ").toLocaleLowerCase("it").includes(q);
   });
 
   const isLight = theme === "light";
@@ -2818,7 +2818,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <span className={`text-[8px] font-medium normal-case sm:hidden ${muted}`}>vista volontario</span>
               </a>
               <button type="button"
-                onClick={() => { const next = !directoryOpen; setDirectoryOpen(next); if (next) { setPersonalOpen(false); setCatalogOpen(false); } }}
+                onClick={() => { const next = !directoryOpen; setDirectoryOpen(next); if (next) { setPersonalOpen(false); setCatalogOpen(false); setMessagesOpen(false); } }}
                 aria-label="Rubrica: cerca contatti di volontari"
                 className={`flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3 ${directoryOpen ? "bg-[#b85668] text-white" : ""}`}>
                 <Users className="size-4" />
@@ -3055,8 +3055,14 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <div className={`flex min-h-10 items-center gap-2 border px-3 ${input}`}>
                 <Search className="size-4 shrink-0 opacity-60" />
                 <input value={directoryQuery} onChange={(e) => setDirectoryQuery(e.target.value)}
+                  list="dashboard-directory-names"
+                  autoComplete="off"
                   placeholder="Nome, cognome, gruppo, telefono o email"
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:opacity-45" />
+                <datalist id="dashboard-directory-names">
+                  {directoryVolunteers.filter((v) => v.name).map((v) => <option key={v.id} value={v.name} />)}
+                </datalist>
+                {directoryQuery ? <button type="button" onClick={() => setDirectoryQuery("")} aria-label="Cancella ricerca" className="px-2 text-xs font-bold">✕</button> : null}
               </div>
             </label>
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -3173,7 +3179,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 </div>
               ))}
             </div>
-            {filteredDirectoryVolunteers.length === 0 ? <p className={`mt-3 text-sm ${muted}`}>Nessun contatto trovato.</p> : null}
+            {dataMode === "live" && liveLoading ? <p className={`mt-3 text-sm ${muted}`}>Caricamento rubrica operativa…</p> : null}
+            {dataMode === "live" && !liveLoading && liveError ? <p role="alert" className="mt-3 text-sm text-[#c76476]">Rubrica non disponibile: {liveError}</p> : null}
+            {!liveLoading && !liveError && directoryVolunteers.length === 0 ? <p role="status" className={`mt-3 text-sm ${muted}`}>Nessun volontario caricato nella modalità {dataMode === "live" ? "OPERATIVO" : "PROVA"}. La ricerca non può mostrare nomi finché l'elenco non è disponibile.</p> : null}
+            {!liveLoading && !liveError && directoryVolunteers.length > 0 && filteredDirectoryVolunteers.length === 0 ? <p className={`mt-3 text-sm ${muted}`}>Nessun nominativo corrispondente. Verifica la scrittura o prova con una parte del cognome.</p> : null}
 
           </section>
         ) : null}
