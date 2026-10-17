@@ -287,3 +287,43 @@ export async function markVolunteerMessage(deviceToken: string, messageId: strin
   if (error) throw error;
   return data as { ok: boolean };
 }
+
+
+export type VolunteerInboxMessage = {
+  id: string;
+  volunteerId: string;
+  volunteerName: string;
+  body: string;
+  createdAt: string;
+  readAt?: string;
+};
+
+export async function sendVolunteerInboxMessage(deviceToken: string, body: string) {
+  const { data, error } = await supabase.rpc("dashboard_send_volunteer_inbox", {
+    p_device_token: deviceToken,
+    p_body: body,
+  });
+  if (error) throw error;
+  return data as { ok: boolean; id: string };
+}
+
+export async function loadVolunteerInboxMessages() {
+  const { data, error } = await supabase.rpc("dashboard_list_volunteer_inbox_working");
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    volunteerId: row.volunteer_id,
+    volunteerName: row.volunteer_name,
+    body: row.body,
+    createdAt: row.created_at,
+    readAt: row.read_at ?? undefined,
+  })) as VolunteerInboxMessage[];
+}
+
+export async function markVolunteerInboxRead(id: string) {
+  const { data, error } = await supabase.rpc("dashboard_mark_inbox_read_working", {
+    p_id: id,
+  });
+  if (error) throw error;
+  return data as { ok: boolean };
+}
