@@ -2506,7 +2506,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities" || choice === "inbox" || choice === "sent" || choice === "personal" || choice === "preferences") {
       goToDashboardTop();
     } else {
-      navigateDashboardSection(choice === "priority" || choice === "regia" ? "priorities-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
+      navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "regia" ? "coverage-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
       if (choice === "staffing") setEditingTeam(true);
     }
   }
@@ -3594,7 +3594,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <button type="button" onClick={() => setGuidedMode(false)} className="min-h-11 border px-2 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
               </div>
             </div>
-            {contextGuideStep !== null && guideChoice !== "overview" && guidedAssignmentStep === null ? contextGuide() : null}
+            {contextGuideStep !== null && guideChoice !== "overview" && guidedAssignmentStep === null && ["contacts", "messages", "activities", "inbox", "sent", "personal", "preferences"].includes(guideChoice) ? contextGuide() : null}
             {guideMenuOpen ? (
               <div className="mt-3 grid gap-2 border-t border-amber-400/50 pt-3 sm:grid-cols-2 lg:grid-cols-3">
                 <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
@@ -3752,7 +3752,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
 
         <section id="coverage-workspace" className={`mt-3 scroll-mt-4 lg:mt-4 ${mobileTab !== "panoramica" ? "hidden lg:block" : ""} ${activeWorkspace !== "coverage-workspace" ? "hidden" : ""}`}>
-          {guideChoice === "staffing" ? contextGuide() : null}
+          {guideChoice === "regia" ? contextGuide() : null}
           {focusContext ? (
             <div role="status" className={`mb-3 border-2 border-[#b85668] p-3 ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}>
               <div className="flex items-start justify-between gap-3">
@@ -3850,6 +3850,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : null}
 
         <section id="turno-workspace" className={`mt-3 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""} ${activeWorkspace !== "turno-workspace" ? "hidden" : ""}`}>
+          {guideChoice === "staffing" ? contextGuide() : null}
+
           {focusContext ? (
             <div role="status" className={`mb-3 border-2 border-[#b85668] p-3 ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}>
               <div className="flex items-center gap-1"><p className="text-[10px] font-black uppercase text-[#c76476]">Stai gestendo questo punto</p><button type="button" onClick={() => setHelpTopic("turn")} aria-label="Spiega gestione turno" className="rounded-full p-1"><CircleHelp className="size-4" /></button></div>
