@@ -1262,6 +1262,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [personalOpen, setPersonalOpen] = useState(volunteerOnly);
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
   const [personalQuery, setPersonalQuery] = useState("");
+  const [volunteerAuthEmail, setVolunteerAuthEmail] = useState("");
+  const [volunteerAuthReady, setVolunteerAuthReady] = useState(false);
+  const [volunteerAuthBusy, setVolunteerAuthBusy] = useState(false);
+  const [volunteerAuthError, setVolunteerAuthError] = useState("");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
@@ -1302,7 +1306,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   useEffect(() => {
     const savedMode = localStorage.getItem("costacciaro-dashboard-mode");
-    const initialMode = savedMode === "live" ? "live" : "test";
+    const initialMode = volunteerOnly ? "live" : (savedMode === "live" ? "live" : "test");
     setDataMode(initialMode);
     if (initialMode === "test") {
       const savedActivities = localStorage.getItem("costacciaro-test-activities");
@@ -1452,6 +1456,97 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     }, 350);
     return () => window.clearTimeout(timer);
   }, [activities, dataMode]);
+
+  useEffect(() => {
+    if (!volunteerOnly) return;
+
+    let cancelled = false;
+
+    async function hydrateVolunteerAuth() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      const session = sessionData.session;
+      const email = session?.user?.email || "";
+      setVolunteerAuthEmail(email);
+
+      if (!session) {
+        setVolunteerAuthReady(true);
+        return;
+      }
+
+      const pendingId = localStorage.getItem("costacciaro-volunteer-pending-id") || "";
+      if (pendingId) {
+        setVolunteerAuthBusy(true);
+        const { error } = await supabase.rpc("claim_dashboard_volunteer", { p_volunteer_id: pendingId });
+        setVolunteerAuthBusy(false);
+        if (error) {
+          setVolunteerAuthError(error.message.includes("email does not match")
+            ? "L'account Google scelto non corrisponde all'email registrata per questo volontario."
+            : error.message);
+        } else {
+          localStorage.removeItem("costacciaro-volunteer-pending-id");
+        }
+      }
+
+      const { data: linkData } = await supabase
+        .from("dashboard_volunteer_accounts")
+        .select("volunteer_id")
+        .eq("user_id", session.user.id)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (linkData?.volunteer_id) {
+        setPersonalVolunteerId(linkData.volunteer_id);
+        const linked = liveVolunteers.find((v) => v.id === linkData.volunteer_id);
+        if (linked) setPersonalQuery(linked.name);
+      }
+      setVolunteerAuthReady(true);
+    }
+
+    hydrateVolunteerAuth();
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      hydrateVolunteerAuth();
+    });
+
+    return () => {
+      cancelled = true;
+      authListener.subscription.unsubscribe();
+    };
+  }, [volunteerOnly, liveVolunteers.length]);
+
+  function maskEmail(email?: string) {
+    if (!email || !email.includes("@")) return "Email non disponibile";
+    const [name, domain] = email.split("@");
+    const visible = name.slice(0, 1);
+    return `${visible}${"*".repeat(Math.max(3, Math.min(8, name.length - 1)))}@${domain}`;
+  }
+
+  async function connectVolunteerWithGoogle() {
+    if (!personalVolunteerId) return;
+    setVolunteerAuthError("");
+    localStorage.setItem("costacciaro-volunteer-pending-id", personalVolunteerId);
+    setVolunteerAuthBusy(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/volontario`,
+      },
+    });
+    if (error) {
+      setVolunteerAuthBusy(false);
+      setVolunteerAuthError(error.message);
+    }
+  }
+
+  async function disconnectVolunteerGoogle() {
+    await supabase.auth.signOut();
+    setVolunteerAuthEmail("");
+    setPersonalVolunteerId("");
+    setPersonalQuery("");
+    localStorage.removeItem("costacciaro-volunteer-pending-id");
+  }
 
   const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
 
@@ -1938,6 +2033,40 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   <h2 className="mt-1 text-xl font-black uppercase">{personalVolunteer.name}</h2>
                   {personalVolunteer.group ? <p className={`mt-1 text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
                 </div>
+
+                {volunteerOnly ? (
+                  <div className={`mt-3 border-2 p-4 ${panel}`}>
+                    {volunteerAuthEmail ? (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase text-emerald-600">Profilo associato</p>
+                          <p className="mt-1 text-sm font-bold">{volunteerAuthEmail}</p>
+                          <p className={`mt-1 text-xs ${muted}`}>Questo dispositivo può usare Il mio Costacciaro come {personalVolunteer.name}.</p>
+                        </div>
+                        <button type="button" onClick={disconnectVolunteerGoogle} className="min-h-10 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase">
+                          Esci
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-[#c76476]">Associa il tuo profilo</p>
+                        <p className="mt-2 text-sm">
+                          Email registrata: <strong>{maskEmail(personalVolunteer.email)}</strong>
+                        </p>
+                        <p className={`mt-1 text-xs ${muted}`}>Non devi aprire la posta: scegli semplicemente il tuo account Google.</p>
+                        <button
+                          type="button"
+                          onClick={connectVolunteerWithGoogle}
+                          disabled={volunteerAuthBusy || !personalVolunteer.email}
+                          className="mt-3 min-h-11 border-2 border-[#b85668] bg-[#b85668] px-4 text-xs font-black uppercase text-white disabled:opacity-50"
+                        >
+                          {volunteerAuthBusy ? "Collegamento…" : "Associa con Google"}
+                        </button>
+                        {volunteerAuthError ? <p className="mt-2 text-xs font-bold text-[#c76476]">{volunteerAuthError}</p> : null}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
 
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <div className={`border-2 p-4 ${panel}`}>
