@@ -1875,7 +1875,6 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const unreadVolunteerMessageCount = volunteerMessages.filter((m) => !m.readAt).length;
   const unconfirmedVolunteerMessageCount = volunteerMessages.filter((m) => m.urgent && !m.acknowledgedAt).length;
   const pendingConfirmationsCount = dashboardMessages.filter((m) => m.urgent && m.acknowledgedCount < m.recipientCount).length;
-  const attentionIssueCount = underCoveredTeams.length + unreadVolunteerInboxCount + pendingConfirmationsCount;
 
   function switchDataMode(nextMode: "test" | "live") {
     if (nextMode === dataMode) return;
@@ -2038,6 +2037,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     team.day === day && team.target > 0 && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target
   );
   const firstUnderCoveredTeam = underCoveredTeams[0];
+  const attentionIssueCount = underCoveredTeams.length + unreadVolunteerInboxCount + pendingConfirmationsCount;
   const personalMatches = useMemo(() => {
     const q = personalQuery.trim().toLowerCase();
     if (q.length < 2) return [];
