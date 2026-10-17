@@ -2440,7 +2440,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         <div className="min-w-[180px] flex-1">
           <strong className="block text-sm">Passaggio {step + 1} di 4 · {assignmentGuide[step].title}</strong>
           <p className="mt-1 text-xs">{assignmentGuide[step].details}</p>
-          {step === 2 ? <p className="mt-1 text-xs font-bold">In squadra: {selectedTeam.memberIds.length} persone. Le persone già impegnate richiedono conferma.</p> : null}
+          {step === 2 ? <p className="mt-1 text-xs font-bold">In squadra: {selectedTeam.memberIds.length} persone · Nuove aggiunte in questo percorso: {guideNewMembers.length}. Puoi anche controllare una squadra già compilata. Le persone già impegnate richiedono conferma.</p> : null}
           {step === 3 ? <p className="mt-1 text-xs font-bold">Assegnati: {selectedTeam.memberIds.length} / {selectedTeam.target} · Posti scoperti: {Math.max(0, selectedTeam.target - selectedTeam.memberIds.length)}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
