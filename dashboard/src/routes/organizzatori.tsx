@@ -2163,6 +2163,46 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   </div>
                 ) : null}
 
+                {volunteerOnly && volunteerDeviceLinked ? (
+                  <div className={`mt-3 border-2 p-4 ${panel}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi</p>
+                        <h3 className="text-lg font-black uppercase">Comunicazioni per te</h3>
+                      </div>
+                      <MessageSquare className="size-5 text-[#c76476]" />
+                    </div>
+
+                    <div className="mt-3 space-y-2">
+                      {volunteerMessages.length ? volunteerMessages.map((m) => (
+                        <div key={m.id} className={`border-2 p-3 ${m.urgent ? "border-[#b85668]" : panelSoft}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <strong className="text-sm">{m.title}</strong>
+                            <span className={`text-[9px] font-black uppercase ${m.readAt ? "text-emerald-600" : "text-[#c76476]"}`}>
+                              {m.readAt ? "Letto" : "Nuovo"}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm leading-relaxed">{m.body}</p>
+                          {m.urgent ? (
+                            <div className="mt-3">
+                              {m.acknowledgedAt ? (
+                                <span className="inline-flex items-center gap-1 border border-emerald-600 px-2 py-1 text-xs font-black text-emerald-600">
+                                  <CheckCheck className="size-4" /> Confermato
+                                </span>
+                              ) : (
+                                <button type="button" onClick={() => acknowledgeVolunteerMessage(m.id)}
+                                  className="inline-flex min-h-10 items-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-3 text-xs font-black uppercase text-white">
+                                  <Check className="size-4" /> Confermo di aver letto
+                                </button>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      )) : <p className={`text-sm ${muted}`}>Nessun messaggio per te al momento.</p>}
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <div className={`border-2 p-4 ${panel}`}>
                     <p className="text-[10px] font-black uppercase text-[#c76476]">Prossimo turno</p>
@@ -2269,6 +2309,18 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <Users className="size-4" />
                 <span className="text-[10px] sm:text-xs">Contatti</span>
                 <span className={`text-[8px] font-medium normal-case sm:hidden ${directoryOpen ? "text-white/80" : muted}`}>telefono · email</span>
+              </button>
+              <button type="button"
+                onClick={() => {
+                  const next = !messagesOpen;
+                  setMessagesOpen(next);
+                  if (next) { setDirectoryOpen(false); setCatalogOpen(false); setPersonalOpen(false); }
+                }}
+                aria-label="Messaggi interni ai volontari"
+                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3 ${messagesOpen ? "bg-[#b85668] text-white" : ""}`}>
+                <MessageSquare className="size-4" />
+                <span className="text-[10px] sm:text-xs">Messaggi</span>
+                <span className={`text-[8px] font-medium normal-case sm:hidden ${messagesOpen ? "text-white/80" : muted}`}>singoli · squadre</span>
               </button>
               <button type="button"
                 onClick={() => { const next = !catalogOpen; setCatalogOpen(next); if (next) { setPersonalOpen(false); setDirectoryOpen(false); } }}
@@ -2584,6 +2636,123 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
             {filteredDirectoryVolunteers.length === 0 ? <p className={`mt-3 text-sm ${muted}`}>Nessun contatto trovato.</p> : null}
 
+          </section>
+        ) : null}
+
+        {messagesOpen ? (
+          <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase text-[#c76476]">Comunicazioni interne</p>
+                <h2 className="text-lg font-black uppercase">Messaggi ai volontari</h2>
+                <p className={`mt-1 text-xs ${muted}`}>Invia a tutti, a una persona o a una squadra. Nel Mio Costacciaro viene registrata la lettura.</p>
+              </div>
+              <button type="button" onClick={() => setMessagesOpen(false)}
+                className="grid size-10 shrink-0 place-items-center border-2 border-[#b85668] hover:bg-[#b85668] hover:text-white"
+                aria-label="Chiudi messaggi" title="Chiudi messaggi">
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {dataMode !== "live" ? (
+              <div className="mt-3 border-2 border-amber-500 p-3 text-sm font-bold">
+                Passa a <strong>Operativo</strong> per inviare messaggi reali.
+              </div>
+            ) : (
+              <>
+                <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr]">
+                  <div className={`border-2 p-3 ${panelSoft}`}>
+                    <p className="text-[10px] font-black uppercase text-[#c76476]">Nuovo messaggio</p>
+                    <div className="mt-3 grid gap-3">
+                      <label className="grid gap-1 text-xs font-bold">
+                        Destinatari
+                        <select value={messageType} onChange={(e) => setMessageType(e.target.value as "notice" | "direct" | "team")}
+                          className={`min-h-11 border-2 px-3 ${input}`}>
+                          <option value="notice">Tutti i volontari</option>
+                          <option value="direct">Singolo volontario</option>
+                          <option value="team">Squadra di lavoro</option>
+                        </select>
+                      </label>
+
+                      {messageType === "direct" ? (
+                        <label className="grid gap-1 text-xs font-bold">
+                          Volontario
+                          <select value={messageTargetVolunteerId} onChange={(e) => setMessageTargetVolunteerId(e.target.value)}
+                            className={`min-h-11 border-2 px-3 ${input}`}>
+                            <option value="">Seleziona…</option>
+                            {activeVolunteers.map((v) => <option key={v.id} value={v.id}>{v.name}{v.group ? ` · ${v.group}` : ""}</option>)}
+                          </select>
+                        </label>
+                      ) : null}
+
+                      {messageType === "team" ? (
+                        <label className="grid gap-1 text-xs font-bold">
+                          Squadra
+                          <select value={messageTargetTeamId} onChange={(e) => setMessageTargetTeamId(e.target.value)}
+                            className={`min-h-11 border-2 px-3 ${input}`}>
+                            <option value="">Seleziona…</option>
+                            {teams.filter((t) => t.id !== "__draft__").map((t) => (
+                              <option key={t.id} value={t.id}>{t.name} · {t.day} · {t.slot}</option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null}
+
+                      <label className="grid gap-1 text-xs font-bold">
+                        Titolo
+                        <input value={messageTitle} onChange={(e) => setMessageTitle(e.target.value)}
+                          className={`min-h-11 border-2 px-3 ${input}`} placeholder="Es. Cambio turno" />
+                      </label>
+
+                      <label className="grid gap-1 text-xs font-bold">
+                        Messaggio
+                        <textarea value={messageBody} onChange={(e) => setMessageBody(e.target.value)}
+                          className={`min-h-28 border-2 p-3 ${input}`} placeholder="Scrivi il messaggio…" />
+                      </label>
+
+                      <label className="flex items-center gap-2 text-xs font-bold">
+                        <input type="checkbox" checked={messageUrgent} onChange={(e) => setMessageUrgent(e.target.checked)} />
+                        Richiedi conferma esplicita
+                      </label>
+
+                      <button type="button" onClick={submitDashboardMessage} disabled={messageBusy}
+                        className="flex min-h-11 items-center justify-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-4 text-xs font-black uppercase text-white disabled:opacity-50">
+                        <Send className="size-4" />
+                        {messageBusy ? "Invio…" : "Invia messaggio"}
+                      </button>
+                      {messageError ? <p className="text-xs font-bold text-[#c76476]">{messageError}</p> : null}
+                    </div>
+                  </div>
+
+                  <div className={`border-2 p-3 ${panelSoft}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi inviati</p>
+                      <button type="button" onClick={() => loadDashboardMessages().then(setDashboardMessages).catch(() => {})}
+                        className="border px-2 py-1 text-[10px] font-black uppercase">Aggiorna</button>
+                    </div>
+                    <div className="mt-3 max-h-[520px] space-y-2 overflow-auto">
+                      {dashboardMessages.length ? dashboardMessages.map((m) => (
+                        <div key={m.id} className={`border-2 p-3 ${panel}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <strong className="block text-sm">{m.title}</strong>
+                              <span className={`text-[10px] ${muted}`}>{m.targetLabel}</span>
+                            </div>
+                            {m.urgent ? <span className="border border-[#b85668] px-2 py-1 text-[9px] font-black uppercase text-[#c76476]">Conferma</span> : null}
+                          </div>
+                          <p className="mt-2 text-xs">{m.body}</p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold">
+                            <span className="border px-2 py-1">Destinatari {m.recipientCount}</span>
+                            <span className="border px-2 py-1">Letti {m.readCount}/{m.recipientCount}</span>
+                            {m.urgent ? <span className="border px-2 py-1">Confermati {m.acknowledgedCount}/{m.recipientCount}</span> : null}
+                          </div>
+                        </div>
+                      )) : <p className={`text-xs ${muted}`}>Nessun messaggio inviato.</p>}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </section>
         ) : null}
 
