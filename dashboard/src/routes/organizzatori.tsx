@@ -1549,6 +1549,25 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   useEffect(() => {
+    if (volunteerOnly || dataMode !== "live") return;
+    let cancelled = false;
+
+    async function refreshInboxBadge() {
+      try {
+        const inbox = await loadVolunteerInboxMessages();
+        if (!cancelled) setVolunteerInbox(inbox);
+      } catch {}
+    }
+
+    refreshInboxBadge();
+    const timer = window.setInterval(refreshInboxBadge, 10000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [volunteerOnly, dataMode]);
+
+  useEffect(() => {
     if (!messagesOpen || volunteerOnly || dataMode !== "live") return;
     let cancelled = false;
 
@@ -1691,6 +1710,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       .filter((v) => `${v.name} ${v.group || ""}`.toLowerCase().includes(q))
       .slice(0, 8);
   }, [activeVolunteers, messageTargetQuery]);
+  const unreadVolunteerInboxCount = volunteerInbox.filter((m) => !m.readAt).length;
 
   function switchDataMode(nextMode: "test" | "live") {
     if (nextMode === dataMode) return;
@@ -2418,11 +2438,18 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   setMessagesOpen(next);
                   if (next) { setDirectoryOpen(false); setCatalogOpen(false); setPersonalOpen(false); }
                 }}
-                aria-label="Messaggi interni ai volontari"
-                className={`flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3 ${messagesOpen ? "bg-[#b85668] text-white" : ""}`}>
+                aria-label={unreadVolunteerInboxCount ? `Messaggi interni: ${unreadVolunteerInboxCount} nuovi` : "Messaggi interni ai volontari"}
+                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 border-2 border-[#b85668] px-2 text-center font-black uppercase sm:min-h-11 sm:flex-row sm:gap-2 sm:px-3 ${messagesOpen ? "bg-[#b85668] text-white" : ""}`}>
                 <MessageSquare className="size-4" />
                 <span className="text-[10px] sm:text-xs">Messaggi</span>
-                <span className={`text-[8px] font-medium normal-case sm:hidden ${messagesOpen ? "text-white/80" : muted}`}>singoli · squadre</span>
+                {unreadVolunteerInboxCount ? (
+                  <span className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-black ${messagesOpen ? "bg-white text-[#b85668]" : "bg-[#b85668] text-white"}`}>
+                    {unreadVolunteerInboxCount}
+                  </span>
+                ) : null}
+                <span className={`text-[8px] font-medium normal-case sm:hidden ${messagesOpen ? "text-white/80" : muted}`}>
+                  {unreadVolunteerInboxCount ? `${unreadVolunteerInboxCount} nuovi` : "singoli · squadre"}
+                </span>
               </button>
               <button type="button"
                 onClick={() => { const next = !catalogOpen; setCatalogOpen(next); if (next) { setPersonalOpen(false); setDirectoryOpen(false); } }}
