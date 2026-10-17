@@ -3311,10 +3311,12 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   <div className={`mt-3 border-2 p-3 ${panelSoft}`}>
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi inviati</p>
-                      <span className={`text-[10px] ${muted}`}>automatico</span>
+                      <button type="button" onClick={() => setSentArchiveOpen((v) => !v)} className="border px-2 py-1 text-[9px] font-black uppercase">
+                        {sentArchiveOpen ? "Attivi" : "Archivio"}
+                      </button>
                     </div>
                     <div className="mt-3 max-h-[430px] space-y-2 overflow-auto">
-                      {dashboardMessages.length ? dashboardMessages.map((m) => (
+                      {(sentArchiveOpen ? archivedDashboardMessages : dashboardMessages).length ? (sentArchiveOpen ? archivedDashboardMessages : dashboardMessages).map((m) => (
                         <div key={m.id} className={`border-2 p-3 ${panel}`}>
                           <div className="flex items-start justify-between gap-2">
                             <div>
@@ -3334,6 +3336,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                             <span className="border px-2 py-1">Destinatari {m.recipientCount}</span>
                             <span className={`border px-2 py-1 ${m.readCount >= m.recipientCount && m.recipientCount > 0 ? "border-emerald-600 text-emerald-600" : ""}`}>Letti {m.readCount}/{m.recipientCount}</span>
                             {m.urgent ? <span className={`border px-2 py-1 ${m.acknowledgedCount >= m.recipientCount && m.recipientCount > 0 ? "border-emerald-600 text-emerald-600" : ""}`}>Confermati {m.acknowledgedCount}/{m.recipientCount}</span> : null}
+                            <button type="button" onClick={() => setSentMessageArchived(m.id, !sentArchiveOpen)} className="border px-2 py-1">
+                              {sentArchiveOpen ? "Ripristina" : "Archivia"}
+                            </button>
                           </div>
                         </div>
                       )) : <p className={`text-xs ${muted}`}>Nessun messaggio inviato.</p>}
@@ -3345,22 +3350,30 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   <div className={`mt-3 border-2 p-3 ${panelSoft}`}>
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi dai volontari</p>
-                      <span className={`text-[10px] ${muted}`}>automatico</span>
+                      <button type="button" onClick={() => setInboxArchiveOpen((v) => !v)} className="border px-2 py-1 text-[9px] font-black uppercase">
+                        {inboxArchiveOpen ? "Attivi" : "Archivio"}
+                      </button>
                     </div>
                     <div className="mt-2 max-h-[430px] space-y-2 overflow-auto">
-                      {volunteerInbox.length ? volunteerInbox.map((m) => (
+                      {(inboxArchiveOpen ? archivedVolunteerInbox : volunteerInbox).length ? (inboxArchiveOpen ? archivedVolunteerInbox : volunteerInbox).map((m) => (
                         <div key={m.id} className={`border-2 p-3 ${m.readAt ? panel : "border-[#b85668]"}`}>
                           <div className="flex items-start justify-between gap-2">
                             <strong className="text-sm">{m.volunteerName}</strong>
                             <span className={`text-[9px] font-black uppercase ${m.readAt ? "text-emerald-600" : "text-[#c76476]"}`}>{m.readAt ? "Letto" : "Nuovo"}</span>
                           </div>
                           <p className="mt-2 text-xs">{m.body}</p>
-                          {!m.readAt ? (
-                            <button type="button" onClick={() => markInboxRead(m.id)}
-                              className="mt-2 border px-2 py-1 text-[10px] font-black uppercase">
-                              Segna letto
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {!m.readAt && !inboxArchiveOpen ? (
+                              <button type="button" onClick={() => markInboxRead(m.id)}
+                                className="border px-2 py-1 text-[10px] font-black uppercase">
+                                Segna letto
+                              </button>
+                            ) : null}
+                            <button type="button" onClick={() => setInboxMessageArchived(m.id, !inboxArchiveOpen)}
+                              className="border px-2 py-1 text-[10px] font-black uppercase">
+                              {inboxArchiveOpen ? "Ripristina" : "Archivia"}
                             </button>
-                          ) : null}
+                          </div>
                         </div>
                       )) : <p className={`text-xs ${muted}`}>Nessun messaggio ricevuto.</p>}
                     </div>
@@ -3452,16 +3465,16 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           <Kpi label="Copertura" value={coverageLabel} light={isLight} onHelp={() => setHelpTopic("coverage")} />
         </section>
 
-        <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${underCoveredTeams.length ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"} ${activeWorkspace !== "priorities-workspace" ? "hidden" : ""}`}>
+        <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${attentionIssueCount ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"} ${activeWorkspace !== "priorities-workspace" ? "hidden" : ""}`}>
           <div className="flex items-center gap-2">
-            {underCoveredTeams.length ? <AlertTriangle className="size-5 text-[#c76476]" /> : <CheckCircle2 className="size-5 text-emerald-600" />}
+            {attentionIssueCount ? <AlertTriangle className="size-5 text-[#c76476]" /> : <CheckCircle2 className="size-5 text-emerald-600" />}
             <div>
               <div className="flex items-center gap-1"><p className="text-[10px] font-black uppercase text-[#c76476]">Priorità operative</p><button type="button" onClick={() => setHelpTopic("priorities")} aria-label="Spiega priorità operative" className="rounded-full p-1"><CircleHelp className="size-4" /></button></div>
-              <h2 className="text-base font-black uppercase lg:text-lg">{underCoveredTeams.length ? "Cosa richiede attenzione" : "Nessuna criticità di copertura"}</h2>
+              <h2 className="text-base font-black uppercase lg:text-lg">{attentionIssueCount ? `Cosa richiede attenzione · ${attentionIssueCount}` : "Nessuna criticità operativa"}</h2>
             </div>
           </div>
-          {underCoveredTeams.length ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {attentionIssueCount ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <button type="button" onClick={() => {
                 if (firstUnderCoveredTeam) {
                   setDay(firstUnderCoveredTeam.day);
@@ -3482,6 +3495,14 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <button type="button" onClick={() => { setMobileTab("panoramica"); setFocusContext(`POSTI ANCORA SCOPERTI — ${uncoveredPlaces} posti da coprire il ${day}. Le celle evidenziate mostrano esattamente quali attività e fasce sono incomplete; clicca una cella per gestirla.`); goToSection("coverage-workspace", true, "priorities-workspace"); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
                 <strong className="block text-sm">{uncoveredPlaces} posti ancora scoperti</strong>
                 <span className={`text-[10px] ${muted}`}>Rivedi il quadro complessivo</span>
+              </button>
+              <button type="button" onClick={() => { setMessagesOpen(true); setMessagePane("inbox"); requestAnimationFrame(goToDashboardTop); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
+                <strong className="block text-sm">{unreadVolunteerInboxCount} messaggi nuovi</strong>
+                <span className={`text-[10px] ${muted}`}>Dai volontari</span>
+              </button>
+              <button type="button" onClick={() => { setMessagesOpen(true); setMessagePane("sent"); requestAnimationFrame(goToDashboardTop); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
+                <strong className="block text-sm">{pendingConfirmationsCount} conferme in attesa</strong>
+                <span className={`text-[10px] ${muted}`}>Messaggi importanti</span>
               </button>
             </div>
           ) : null}
