@@ -2477,7 +2477,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     return (
       <div role="region" aria-label="Indicazioni operative" className={`my-3 border-2 border-amber-400 p-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
         <strong className="text-sm">Passaggio {contextGuideStep + 1} di 3 · {instructions[contextGuideStep]}</strong>
-        <p className="mt-1 text-xs">{instructions[contextGuideStep]}</p>
+        <p className="mt-1 text-xs">Segui il comando nella sezione aperta, poi verifica personalmente il risultato.</p>
         <p className="mt-1 text-xs">La guida indica cosa fare: non invia, salva o conferma modifiche al posto tuo.</p>
         <p className="mt-1 text-xs font-semibold">Operazione selezionata: {guideChoice === "staffing" ? "Modifica turno" : guideChoice === "priority" ? "Priorità" : guideChoice === "people" ? "Gestione squadre" : guideChoice === "assign" ? "Assegnazioni suggerite" : guideChoice === "regia" ? "Regia" : guideChoice === "myturns" ? "Turni volontario" : guideChoice === "contacts" ? "Rubrica" : guideChoice === "messages" ? "Composizione messaggi" : guideChoice === "inbox" ? "Ricevuti" : guideChoice === "sent" ? "Inviati" : guideChoice === "personal" ? "Vista personale" : guideChoice === "activities" ? "Catalogo attività" : "Preferenze"}. Il comando resta sotto il controllo dell’organizzatore.</p>
         <div className="mt-2 flex flex-wrap gap-2">
