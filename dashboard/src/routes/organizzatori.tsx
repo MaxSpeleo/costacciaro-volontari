@@ -2507,6 +2507,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     } else {
       navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "regia" ? "coverage-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
       if (choice === "staffing") setEditingTeam(true);
+      else setEditingTeam(false);
     }
   }
 
