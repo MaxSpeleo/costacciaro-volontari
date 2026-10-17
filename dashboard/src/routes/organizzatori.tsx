@@ -2353,14 +2353,28 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       setMobileTab("panoramica");
     }
     setFocusContext("");
-    goToSection(id);
+    setReturnSection(null);
+    setActiveWorkspace(id);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  function toggleDashboardWorkspace(id: DashboardSectionId) {
+    if (activeWorkspace === id) {
+      setActiveWorkspace(null);
+      setReturnSection(null);
+      setFocusContext("");
+      setMobileTab("panoramica");
+      window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+    navigateDashboardSection(id);
   }
 
   function goToDashboardTop() {
     setReturnSection(null);
     setFocusContext("");
-    setActiveWorkspace("places-workspace");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setActiveWorkspace(null);
+    window.scrollTo({ top: 0, behavior: "instant" });
   }
 
   if (!volunteerOnly && !organizerAccessReady) {
@@ -3433,12 +3447,12 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             >
               ↑
             </button>
-            <button type="button" onClick={() => { setActiveWorkspace(null); goToDashboardTop(); }} className={`min-h-10 min-w-[100px] shrink-0 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === null ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Panoramica</button>
-            <button type="button" onClick={() => activeWorkspace === "places-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("places-workspace")} className={`min-h-10 min-w-[120px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "places-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Sale e presidi</button>
-            <button type="button" onClick={() => activeWorkspace === "priorities-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("priorities-workspace")} className={`min-h-10 min-w-[92px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "priorities-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Priorità</button>
-            <button type="button" onClick={() => activeWorkspace === "coverage-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("coverage-workspace")} className={`min-h-10 min-w-[108px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "coverage-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Regia turno</button>
-            <button type="button" onClick={() => activeWorkspace === "turno-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("turno-workspace")} className={`min-h-10 min-w-[125px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "turno-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Turno selezionato</button>
-            <button type="button" onClick={() => activeWorkspace === "people-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("people-workspace")} className={`min-h-10 min-w-[88px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "people-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Persone</button>
+            <button type="button" onClick={goToDashboardTop} className={`min-h-10 min-w-[100px] shrink-0 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === null ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Panoramica</button>
+            <button type="button" onClick={() => toggleDashboardWorkspace("places-workspace")} className={`min-h-10 min-w-[120px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "places-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Sale e presidi</button>
+            <button type="button" onClick={() => toggleDashboardWorkspace("priorities-workspace")} className={`min-h-10 min-w-[92px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "priorities-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Priorità</button>
+            <button type="button" onClick={() => toggleDashboardWorkspace("coverage-workspace")} className={`min-h-10 min-w-[108px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "coverage-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Regia turno</button>
+            <button type="button" onClick={() => toggleDashboardWorkspace("turno-workspace")} className={`min-h-10 min-w-[125px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "turno-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Turno selezionato</button>
+            <button type="button" onClick={() => toggleDashboardWorkspace("people-workspace")} className={`min-h-10 min-w-[88px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "people-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Persone</button>
           </div>
         </nav>
 
