@@ -2423,6 +2423,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     }, 250);
   }
 
+  function guideActions(step: number) {
+    if (guidedAssignmentStep !== step) return null;
+    return (
+      <div role="region" aria-label={`Guida operativa: passaggio ${step + 1}`} className={`my-3 flex flex-wrap items-center gap-3 border-2 border-amber-400 bg-amber-400/10 p-3 ${isLight ? "text-ink" : "text-paper"}`}>
+        <div className="min-w-[180px] flex-1">
+          <strong className="block text-sm">Passaggio {step + 1} di 4 · {assignmentGuide[step].title}</strong>
+          <p className="mt-1 text-xs">{assignmentGuide[step].details}</p>
+          {step === 2 ? <p className="mt-1 text-xs font-bold">In squadra: {selectedTeam.memberIds.length} persone. Le persone già impegnate richiedono conferma.</p> : null}
+          {step === 3 ? <p className="mt-1 text-xs font-bold">Assegnati: {selectedTeam.memberIds.length} / {selectedTeam.target} · Posti scoperti: {Math.max(0, selectedTeam.target - selectedTeam.memberIds.length)}</p> : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={step === 0} onClick={() => navigateAssignmentGuide(step - 1)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
+          {step < 3 ? (
+            <button type="button" disabled={!guideCanContinue} onClick={() => navigateAssignmentGuide(step + 1)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black disabled:opacity-40">Continua →</button>
+          ) : (
+            <button type="button" disabled={!guideCanContinue} onClick={() => setGuidedAssignmentStep(null)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black disabled:opacity-40">Termina guida</button>
+          )}
+          <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
+        </div>
+      </div>
+    );
+  }
+
   function guideTo(choice: typeof guideChoice) {
     setGuideChoice(choice);
     setHelpTopic(null);
@@ -3505,16 +3528,16 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         {guidedMode ? (
-          <section className={`mb-3 border-2 border-[#b85668] p-3 ${panel}`} aria-label="Assistente guidato organizzatori">
+          <section className={`mb-3 border-2 border-amber-400 p-3 ${panel}`} aria-label="Assistente guidato organizzatori">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <CircleHelp className="size-5 text-[#c76476]" />
-                <div><strong className="text-sm uppercase">Guida rapida</strong><p className={`text-xs ${muted}`}>Che cosa vuoi fare? Ti porto alla funzione giusta.</p></div>
+                <div><strong className="text-base uppercase text-amber-400">Cosa vuoi fare? · Guida operativa</strong><p className={`text-xs ${muted}`}>Che cosa vuoi fare? Ti porto alla funzione giusta.</p></div>
               </div>
               <button type="button" onClick={() => setGuidedMode(false)} className="border px-2 py-1 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
             </div>
             <div className="mt-3 border-t border-[#b85668]/50 pt-3">
-              <button type="button" onClick={startAssignmentGuide} className="min-h-11 border-2 border-[#b85668] px-3 py-2 text-sm font-black">
+              <button type="button" onClick={startAssignmentGuide} className="min-h-11 border-2 border-amber-400 bg-amber-400 px-4 py-3 text-sm font-black text-black">
                 {guidedAssignmentStep === null ? "Guidami passo passo nell'assegnazione →" : "Ricomincia percorso guidato"}
               </button>
               {guidedAssignmentStep !== null ? <p className="mt-2 text-xs">La guida attiva è nel pannello a destra. Segui il comando evidenziato.</p> : null}
@@ -3541,25 +3564,6 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : (
           <button type="button" onClick={() => setGuidedMode(true)} className="mb-3 flex min-h-10 items-center gap-2 border-2 border-[#b85668] px-3 text-xs font-black uppercase"><CircleHelp className="size-4" /> Apri guida rapida</button>
         )}
-        {guidedAssignmentStep !== null && activeWorkspace !== null && !volunteerOnly ? (
-          <aside role="region" aria-label="Guida assegnazione attiva" className={`fixed bottom-4 right-4 z-40 w-[min(310px,calc(100vw-32px))] border-2 border-amber-400 p-3 shadow-2xl ${isLight ? "bg-white text-ink" : "bg-ink text-paper"}`}>
-            <p className="text-xs font-black uppercase">Guida · Passaggio {guidedAssignmentStep + 1} di {assignmentGuide.length}</p>
-            <p className="mt-1 text-sm font-black">{assignmentGuide[guidedAssignmentStep].title}</p>
-            <p className="mt-1 text-xs">{assignmentGuide[guidedAssignmentStep].details}</p>
-            {guidedAssignmentStep === 2 ? <p className="mt-2 text-xs font-bold">Volontari presenti nella squadra: {selectedTeam.memberIds.length}. Aggiunti rispetto all’avvio: {guideNewMembers.length}. Puoi continuare se la squadra contiene almeno una persona. Gli spostamenti richiedono conferma.</p> : null}
-            {guidedAssignmentStep === 3 ? <div className="mt-2 border-t border-amber-400/50 pt-2 text-xs font-bold">{day} · {slot} · {activity}<p className="mt-1">In squadra: {selectedTeam.memberIds.length} / {selectedTeam.target} · Da coprire: {Math.max(0,selectedTeam.target-selectedTeam.memberIds.length)}</p></div> : null}
-            {!guideCanContinue ? <p className="mt-2 text-xs text-amber-400">Seleziona almeno un volontario per questa squadra, oppure torna indietro per cambiare turno.</p> : null}
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
-              {guidedAssignmentStep < assignmentGuide.length - 1 ? (
-                <button type="button" disabled={!guideCanContinue} onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white disabled:opacity-40">Continua →</button>
-              ) : (
-                <button type="button" disabled={!guideCanContinue} onClick={() => { setGuidedAssignmentStep(null); }} className="min-h-11 disabled:opacity-40 bg-[#b85668] px-3 text-xs font-black text-white">Termina</button>
-              )}
-              <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-11 px-2 text-xs underline">Esci</button>
-            </div>
-          </aside>
-        ) : null}
         <nav className={`sticky top-0 z-30 mb-3 border-2 border-[#b85668] p-1 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
           <div className="flex gap-1 overflow-x-auto">
             <button
@@ -3702,10 +3706,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
             <div id="guide-shift" className={`mt-3 grid gap-2 border-y py-3 sm:grid-cols-[1fr_1fr_auto] ${guidedAssignmentStep === 0 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${isLight ? "border-ink/10" : "border-paper/10"}`}>
               <Select label="Data" guideId="guide-date" guided={guidedAssignmentStep === 0} value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
-              <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
+              <Select label="Fascia" guideId="guide-slot" guided={guidedAssignmentStep === 0} value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
               <div className={`self-end pb-2 text-[10px] font-bold sm:text-xs ${muted}`}>Poi scegli l’attività qui sotto ↓</div>
             </div>
 
+            {guideActions(0)}
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {currentShiftSummary.map((item) => {
                 const targetDefined = item.target > 0;
@@ -3810,6 +3815,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               </div>
             </label>
           </div>
+          {guideActions(1)}
           <div className={`mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between ${isLight ? "border-ink/10" : "border-paper/10"}`}>
             <div className="text-xs">
               <strong>{day} · {slot} · {activity}</strong>
@@ -3834,6 +3840,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
         <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-4 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
           <div id="guide-people" className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
+            {guideActions(2)}
             {focusContext ? <div role="status" className={`relative z-0 mb-3 border-2 border-[#b85668] p-3 text-xs font-bold ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}><p className="mb-1 text-[10px] font-black uppercase text-[#c76476]">Perché sei qui</p>{focusContext}</div> : null}
             <div className="mb-2 flex items-center justify-between gap-2">
               <div>
@@ -3915,6 +3922,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
+            {guideActions(3)}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Squadra del turno</p>
