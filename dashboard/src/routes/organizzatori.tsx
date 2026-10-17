@@ -1330,6 +1330,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [guidedMode, setGuidedMode] = useState(true);
   const [guideMenuOpen, setGuideMenuOpen] = useState(false);
+  const [contextGuideStep, setContextGuideStep] = useState<number | null>(null);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
   const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities">("overview");
@@ -2413,6 +2414,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   function startAssignmentGuide() {
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
     setGuideMenuOpen(false);
+    setContextGuideStep(null);
     navigateAssignmentGuide(0);
   }
   function navigateAssignmentGuide(step: number) {
@@ -2454,8 +2456,35 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     );
   }
 
+  const contextGuideCopy = {
+    staffing: ["Scegli data e fascia", "Apri la modifica del turno e controlla il numero di persone necessarie.", "Verifica che il fabbisogno sia corretto prima di terminare."],
+    priority: ["Esamina le priorità", "Individua un turno con posti scoperti.", "Apri il turno segnalato e verifica gli interventi necessari."],
+    people: ["Trova la squadra", "Seleziona giorno, fascia e attività.", "Controlla le persone presenti e modifica la squadra se necessario."],
+    assign: ["Valuta le proposte", "Apri lo strumento per proporre assegnazioni.", "Controlla l'anteprima prima di approvare eventuali modifiche."],
+    contacts: ["Cerca il volontario", "Usa la rubrica per trovare la persona.", "Apri il contatto desiderato; non inviare comunicazioni automaticamente."],
+    messages: ["Apri le comunicazioni", "Scegli a chi scrivere e componi il messaggio.", "Rileggi destinatari e testo prima dell'invio."],
+    activities: ["Consulta le attività", "Individua l'attività o il sottogruppo da gestire.", "Verifica i cambiamenti prima di chiudere."],
+    overview: ["Panoramica", "Consulta i dati riepilogativi.", "Scegli un'altra operazione quando necessario."],
+  } as const;
+  function contextGuide() {
+    if (contextGuideStep === null || !guideChoice || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
+    const instructions = contextGuideCopy[guideChoice];
+    return (
+      <div role="region" aria-label="Indicazioni operative" className={`my-3 border-2 border-amber-400 p-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
+        <strong className="text-sm">Passaggio {contextGuideStep + 1} di 3 · {instructions[contextGuideStep]}</strong>
+        <p className="mt-1 text-xs">{contextGuideStep === 0 ? "La sezione richiesta è aperta. Segui le indicazioni e poi premi Continua." : instructions[contextGuideStep]}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {contextGuideStep > 0 ? <button type="button" onClick={() => setContextGuideStep(contextGuideStep - 1)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">Indietro</button> : null}
+          <button type="button" onClick={() => setContextGuideStep(contextGuideStep === 2 ? null : contextGuideStep + 1)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black">{contextGuideStep === 2 ? "Termina guida" : "Continua →"}</button>
+          <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
+        </div>
+      </div>
+    );
+  }
+
   function guideTo(choice: typeof guideChoice) {
     setGuidedAssignmentStep(null);
+    setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
     setGuideChoice(choice);
     setHelpTopic(null);
@@ -3554,6 +3583,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <button type="button" onClick={() => setGuidedMode(false)} className="min-h-11 border px-2 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
               </div>
             </div>
+            {(guideChoice === "contacts" || guideChoice === "messages" || guideChoice === "activities") && contextGuideStep !== null ? contextGuide() : null}
             {guideMenuOpen ? (
               <div className="mt-3 grid gap-2 border-t border-amber-400/50 pt-3 sm:grid-cols-2 lg:grid-cols-3">
                 <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
@@ -3658,6 +3688,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${attentionIssueCount ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"} ${activeWorkspace !== "priorities-workspace" ? "hidden" : ""}`}>
+          {guideChoice === "priority" ? contextGuide() : null}
           <div className="flex items-center gap-2">
             {attentionIssueCount ? <AlertTriangle className="size-5 text-[#c76476]" /> : <CheckCircle2 className="size-5 text-emerald-600" />}
             <div>
@@ -3703,6 +3734,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
 
         <section id="coverage-workspace" className={`mt-3 scroll-mt-4 lg:mt-4 ${mobileTab !== "panoramica" ? "hidden lg:block" : ""} ${activeWorkspace !== "coverage-workspace" ? "hidden" : ""}`}>
+          {guideChoice === "staffing" ? contextGuide() : null}
           {focusContext ? (
             <div role="status" className={`mb-3 border-2 border-[#b85668] p-3 ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}>
               <div className="flex items-start justify-between gap-3">
@@ -3855,6 +3887,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-20 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
+          {guidedAssignmentStep === null && (guideChoice === "people" || guideChoice === "assign") ? <div className="col-span-full">{contextGuide()}</div> : null}
           {guidedAssignmentStep !== null && guidedAssignmentStep >= 2 ? (
             <div className={`sticky top-0 z-30 col-span-full border-2 border-amber-400 p-2 shadow-lg ${isLight ? "bg-white" : "bg-ink"}`}>
               {guideActions(guidedAssignmentStep)}
