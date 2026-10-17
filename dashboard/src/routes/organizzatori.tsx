@@ -2262,19 +2262,30 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   <span className={`ml-1 text-xs ${muted}`}>· {v.group}</span>
                   {expandedVolunteerIds.includes(v.id) ? (
                     <span className="mt-2 block text-xs" onClick={(e) => e.stopPropagation()}>
-                      <span className="flex flex-wrap gap-x-4 gap-y-1">
+                      <span className="flex flex-wrap gap-2">
                         <a
                           href={v.phone ? `tel:${v.phone.replace(/\s+/g, "")}` : undefined}
-                          className={v.phone ? "font-bold underline decoration-[#b85668] underline-offset-2" : muted}
+                          className={`inline-flex min-h-9 items-center gap-1 border px-2 font-bold ${v.phone ? "border-[#b85668] hover:bg-[#b85668] hover:text-white" : muted}`}
                         >
-                          <Phone className="mr-1 inline size-3.5" />{v.phone || "Telefono non disponibile"}
+                          <Phone className="size-3.5" /> Chiama
                         </a>
                         <a
-                          href={v.email ? `mailto:${v.email}` : undefined}
-                          className={v.email ? "font-bold underline decoration-[#b85668] underline-offset-2" : muted}
+                          href={v.phone ? `https://wa.me/${v.phone.replace(/\D/g, "").replace(/^00/, "")}?text=${encodeURIComponent(`Ciao ${v.name.split(" ")[0] || ""}, ti contatto per Costacciaro 2026.`)}` : undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`inline-flex min-h-9 items-center gap-1 border px-2 font-bold ${v.phone ? "border-[#b85668] hover:bg-[#b85668] hover:text-white" : muted}`}
                         >
-                          <Mail className="mr-1 inline size-3.5" />{v.email || "Email non disponibile"}
+                          WhatsApp
                         </a>
+                        <a
+                          href={v.email ? `mailto:${v.email}?subject=${encodeURIComponent("Costacciaro 2026")}` : undefined}
+                          className={`inline-flex min-h-9 items-center gap-1 border px-2 font-bold ${v.email ? "border-[#b85668] hover:bg-[#b85668] hover:text-white" : muted}`}
+                        >
+                          <Mail className="size-3.5" /> Email
+                        </a>
+                      </span>
+                      <span className={`mt-2 block text-[10px] ${muted}`}>
+                        {v.phone || "Telefono non disponibile"}{v.email ? ` · ${v.email}` : ""}
                       </span>
                       {dataMode === "live" ? (
                         <span className="mt-3 grid gap-2 border-t pt-3">
