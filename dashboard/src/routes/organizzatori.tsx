@@ -1262,10 +1262,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [personalOpen, setPersonalOpen] = useState(volunteerOnly);
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
   const [personalQuery, setPersonalQuery] = useState("");
-  const [volunteerAuthEmail, setVolunteerAuthEmail] = useState("");
-  const [volunteerAuthReady, setVolunteerAuthReady] = useState(false);
-  const [volunteerAuthBusy, setVolunteerAuthBusy] = useState(false);
-  const [volunteerAuthError, setVolunteerAuthError] = useState("");
+  const [volunteerPairEmail, setVolunteerPairEmail] = useState("");
+  const [volunteerPairPhone4, setVolunteerPairPhone4] = useState("");
+  const [volunteerPairBusy, setVolunteerPairBusy] = useState(false);
+  const [volunteerPairError, setVolunteerPairError] = useState("");
+  const [volunteerDeviceLinked, setVolunteerDeviceLinked] = useState(false);
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
@@ -1459,93 +1460,69 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   useEffect(() => {
     if (!volunteerOnly) return;
-
     let cancelled = false;
 
-    async function hydrateVolunteerAuth() {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (cancelled) return;
-
-      const session = sessionData.session;
-      const email = session?.user?.email || "";
-      setVolunteerAuthEmail(email);
-
-      if (!session) {
-        setVolunteerAuthReady(true);
-        return;
-      }
-
-      const pendingId = localStorage.getItem("costacciaro-volunteer-pending-id") || "";
-      if (pendingId) {
-        setVolunteerAuthBusy(true);
-        const { error } = await supabase.rpc("claim_dashboard_volunteer", { p_volunteer_id: pendingId });
-        setVolunteerAuthBusy(false);
-        if (error) {
-          setVolunteerAuthError(error.message.includes("email does not match")
-            ? "L'account Google scelto non corrisponde all'email registrata per questo volontario."
-            : error.message);
-        } else {
-          localStorage.removeItem("costacciaro-volunteer-pending-id");
-        }
-      }
-
-      const { data: linkData } = await supabase
-        .from("dashboard_volunteer_accounts")
-        .select("volunteer_id")
-        .eq("user_id", session.user.id)
-        .eq("active", true)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (linkData?.volunteer_id) {
-        setPersonalVolunteerId(linkData.volunteer_id);
-        const linked = liveVolunteers.find((v) => v.id === linkData.volunteer_id);
-        if (linked) setPersonalQuery(linked.name);
-      }
-      setVolunteerAuthReady(true);
+    async function resolveDevice() {
+      const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
+      if (!token) return;
+      const { data, error } = await supabase.rpc("resolve_dashboard_volunteer_device", {
+        p_device_token: token,
+      });
+      if (cancelled || error || !data?.ok) return;
+      setVolunteerDeviceLinked(true);
+      setPersonalVolunteerId(data.volunteer_id);
+      if (data.name) setPersonalQuery(data.name);
     }
 
-    hydrateVolunteerAuth();
-    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
-      hydrateVolunteerAuth();
-    });
-
-    return () => {
-      cancelled = true;
-      authListener.subscription.unsubscribe();
-    };
+    resolveDevice();
+    return () => { cancelled = true; };
   }, [volunteerOnly, liveVolunteers.length]);
 
-  function maskEmail(email?: string) {
-    if (!email || !email.includes("@")) return "Email non disponibile";
-    const [name, domain] = email.split("@");
-    const visible = name.slice(0, 1);
-    return `${visible}${"*".repeat(Math.max(3, Math.min(8, name.length - 1)))}@${domain}`;
-  }
-
-  async function connectVolunteerWithGoogle() {
-    if (!personalVolunteerId) return;
-    setVolunteerAuthError("");
-    localStorage.setItem("costacciaro-volunteer-pending-id", personalVolunteerId);
-    setVolunteerAuthBusy(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/volontario`,
-      },
-    });
-    if (error) {
-      setVolunteerAuthBusy(false);
-      setVolunteerAuthError(error.message);
+  function ensureVolunteerDeviceToken() {
+    let token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
+    if (!token) {
+      token = crypto.randomUUID() + "-" + crypto.randomUUID();
+      localStorage.setItem("costacciaro-volunteer-device-token", token);
     }
+    return token;
   }
 
-  async function disconnectVolunteerGoogle() {
-    await supabase.auth.signOut();
-    setVolunteerAuthEmail("");
+  async function pairVolunteerDevice() {
+    if (!personalVolunteerId) return;
+    setVolunteerPairError("");
+    setVolunteerPairBusy(true);
+
+    const token = ensureVolunteerDeviceToken();
+    const { data, error } = await supabase.rpc("claim_dashboard_volunteer_device", {
+      p_volunteer_id: personalVolunteerId,
+      p_email: volunteerPairEmail.trim(),
+      p_phone_last4: volunteerPairPhone4.trim(),
+      p_device_token: token,
+    });
+
+    setVolunteerPairBusy(false);
+
+    if (error || !data?.ok) {
+      const message = error?.message || "";
+      if (message.includes("email mismatch")) setVolunteerPairError("L'email non corrisponde a quella registrata.");
+      else if (message.includes("phone mismatch")) setVolunteerPairError("Le ultime 4 cifre del telefono non corrispondono.");
+      else setVolunteerPairError("Verifica non riuscita. Controlla i dati e riprova.");
+      return;
+    }
+
+    setVolunteerDeviceLinked(true);
+    setVolunteerPairEmail("");
+    setVolunteerPairPhone4("");
+  }
+
+  function unlinkVolunteerDevice() {
+    localStorage.removeItem("costacciaro-volunteer-device-token");
+    setVolunteerDeviceLinked(false);
     setPersonalVolunteerId("");
     setPersonalQuery("");
-    localStorage.removeItem("costacciaro-volunteer-pending-id");
+    setVolunteerPairEmail("");
+    setVolunteerPairPhone4("");
+    setVolunteerPairError("");
   }
 
   const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
@@ -2036,33 +2013,54 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
                 {volunteerOnly ? (
                   <div className={`mt-3 border-2 p-4 ${panel}`}>
-                    {volunteerAuthEmail ? (
+                    {volunteerDeviceLinked ? (
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-[10px] font-black uppercase text-emerald-600">Profilo associato</p>
-                          <p className="mt-1 text-sm font-bold">{volunteerAuthEmail}</p>
-                          <p className={`mt-1 text-xs ${muted}`}>Questo dispositivo può usare Il mio Costacciaro come {personalVolunteer.name}.</p>
+                          <p className="text-[10px] font-black uppercase text-emerald-600">Dispositivo associato</p>
+                          <p className="mt-1 text-sm font-bold">{personalVolunteer.name}</p>
+                          <p className={`mt-1 text-xs ${muted}`}>Da questo dispositivo aprirai direttamente il tuo profilo.</p>
                         </div>
-                        <button type="button" onClick={disconnectVolunteerGoogle} className="min-h-10 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase">
-                          Esci
+                        <button type="button" onClick={unlinkVolunteerDevice} className="min-h-10 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase">
+                          Scollega
                         </button>
                       </div>
                     ) : (
                       <div>
-                        <p className="text-[10px] font-black uppercase text-[#c76476]">Associa il tuo profilo</p>
-                        <p className="mt-2 text-sm">
-                          Email registrata: <strong>{maskEmail(personalVolunteer.email)}</strong>
-                        </p>
-                        <p className={`mt-1 text-xs ${muted}`}>Non devi aprire la posta: scegli semplicemente il tuo account Google.</p>
+                        <p className="text-[10px] font-black uppercase text-[#c76476]">Verifica in 2 passaggi</p>
+                        <p className={`mt-1 text-xs ${muted}`}>Usa i dati già forniti nella candidatura. Non devi aprire la posta.</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <label className="grid gap-1">
+                            <span className="text-[10px] font-black uppercase">Email</span>
+                            <input
+                              type="email"
+                              value={volunteerPairEmail}
+                              onChange={(e) => setVolunteerPairEmail(e.target.value)}
+                              placeholder="La tua email"
+                              className={`min-h-11 border-2 px-3 ${input}`}
+                              autoComplete="email"
+                            />
+                          </label>
+                          <label className="grid gap-1">
+                            <span className="text-[10px] font-black uppercase">Ultime 4 cifre telefono</span>
+                            <input
+                              inputMode="numeric"
+                              maxLength={4}
+                              value={volunteerPairPhone4}
+                              onChange={(e) => setVolunteerPairPhone4(e.target.value.replace(/\D/g, "").slice(0,4))}
+                              placeholder="1234"
+                              className={`min-h-11 border-2 px-3 ${input}`}
+                            />
+                          </label>
+                        </div>
                         <button
                           type="button"
-                          onClick={connectVolunteerWithGoogle}
-                          disabled={volunteerAuthBusy || !personalVolunteer.email}
+                          onClick={pairVolunteerDevice}
+                          disabled={volunteerPairBusy || !volunteerPairEmail.trim() || volunteerPairPhone4.length !== 4}
                           className="mt-3 min-h-11 border-2 border-[#b85668] bg-[#b85668] px-4 text-xs font-black uppercase text-white disabled:opacity-50"
                         >
-                          {volunteerAuthBusy ? "Collegamento…" : "Associa con Google"}
+                          {volunteerPairBusy ? "Verifica…" : "Associa questo dispositivo"}
                         </button>
-                        {volunteerAuthError ? <p className="mt-2 text-xs font-bold text-[#c76476]">{volunteerAuthError}</p> : null}
+                        {volunteerPairError ? <p className="mt-2 text-xs font-bold text-[#c76476]">{volunteerPairError}</p> : null}
                       </div>
                     )}
                   </div>
