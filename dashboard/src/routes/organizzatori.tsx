@@ -1854,6 +1854,24 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     goToSection(target.id, false);
   }
 
+  function navigateDashboardSection(id: DashboardSectionId) {
+    if (id === "turno-workspace") setMobileTab("turno");
+    else if (id === "people-workspace") {
+      setPeopleFilterOpen(true);
+      setMobileTab("persone");
+    } else {
+      setMobileTab("panoramica");
+    }
+    setFocusContext("");
+    goToSection(id);
+  }
+
+  function goToDashboardTop() {
+    setReturnSection(null);
+    setFocusContext("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   if (personalOpen) {
     return (
       <main className={`min-h-screen transition-colors ${shell}`}>
@@ -2323,12 +2341,23 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           {dataMode === "live" && liveSyncLabel ? <span className={liveError ? "text-[#c76476]" : mutedStrong}>{liveError || liveSyncLabel}</span> : null}
         </section>
 
-        <nav className={`mb-3 hidden grid-cols-5 gap-2 lg:grid`}>
-          <button type="button" onClick={() => goToSection("places-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Sale e presidi</button>
-          <button type="button" onClick={() => goToSection("priorities-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Priorità</button>
-          <button type="button" onClick={() => goToSection("coverage-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Regia turno</button>
-          <button type="button" onClick={() => goToSection("turno-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Turno selezionato</button>
-          <button type="button" onClick={() => goToSection("people-workspace")} className={`border-2 px-3 py-2 text-xs font-black uppercase ${panelSoft}`}>Persone</button>
+        <nav className={`sticky top-0 z-30 mb-3 border-2 border-[#b85668] p-1 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
+          <div className="flex gap-1 overflow-x-auto">
+            <button
+              type="button"
+              onClick={goToDashboardTop}
+              className={`min-h-10 shrink-0 border px-2 text-[10px] font-black uppercase ${panelSoft}`}
+              aria-label="Torna all'inizio della dashboard"
+              title="Inizio dashboard"
+            >
+              ↑
+            </button>
+            <button type="button" onClick={() => navigateDashboardSection("places-workspace")} className={`min-h-10 min-w-[120px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${panelSoft}`}>Sale e presidi</button>
+            <button type="button" onClick={() => navigateDashboardSection("priorities-workspace")} className={`min-h-10 min-w-[92px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${panelSoft}`}>Priorità</button>
+            <button type="button" onClick={() => navigateDashboardSection("coverage-workspace")} className={`min-h-10 min-w-[108px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${panelSoft}`}>Regia turno</button>
+            <button type="button" onClick={() => navigateDashboardSection("turno-workspace")} className={`min-h-10 min-w-[125px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${panelSoft}`}>Turno selezionato</button>
+            <button type="button" onClick={() => navigateDashboardSection("people-workspace")} className={`min-h-10 min-w-[88px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${panelSoft}`}>Persone</button>
+          </div>
         </nav>
 
         <section id="places-workspace" className={`mb-3 scroll-mt-4 border-2 p-3 lg:p-5 ${panel}`}>
@@ -2423,15 +2452,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           ) : null}
         </section>
 
-        <nav className={`sticky top-0 z-10 mt-3 grid grid-cols-4 border-2 border-[#b85668] lg:hidden ${isLight ? "bg-paper" : "bg-ink"}`}>
-          {([["panoramica","Quadro"],["turno","Turno"],["persone","Persone"],["squadra","Squadra"]] as const).map(([id,label]) => (
-            <button key={id} type="button" onClick={() => { setMobileTab(id); setFocusContext(""); }}
-              aria-current={mobileTab === id ? "page" : undefined}
-              className={`min-h-11 text-[10px] font-black uppercase ${mobileTab === id ? "bg-[#b85668] text-white" : ""}`}>
-              {label}
-            </button>
-          ))}
-        </nav>
+
 
         <section id="coverage-workspace" className={`mt-3 scroll-mt-4 lg:mt-4 ${mobileTab !== "panoramica" ? "hidden lg:block" : ""}`}>
           {focusContext ? (
