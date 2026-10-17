@@ -18,6 +18,7 @@ import {
   Trash2,
   Pencil,
   Users,
+  X,
   UserRound,
   MapPin,
   Clock3,
@@ -2365,8 +2366,19 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         {directoryOpen ? (
           <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
             <div className="flex items-start justify-between gap-3">
-              <div><p className="text-[10px] font-black uppercase text-[#c76476]">Contatti volontari</p><h2 className="text-lg font-black uppercase">Telefono ed email dei volontari</h2></div>
-              <button type="button" onClick={() => setDirectoryOpen(false)} className="text-xs font-black uppercase">Chiudi</button>
+              <div>
+                <p className="text-[10px] font-black uppercase text-[#c76476]">Contatti volontari</p>
+                <h2 className="text-lg font-black uppercase">Telefono, WhatsApp ed email</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDirectoryOpen(false)}
+                className="grid size-10 shrink-0 place-items-center border-2 border-[#b85668] hover:bg-[#b85668] hover:text-white"
+                aria-label="Chiudi rubrica"
+                title="Chiudi rubrica"
+              >
+                <X className="size-5" />
+              </button>
             </div>
             <label className="mt-3 block">
               <span className={`mb-1 block text-[10px] font-black uppercase ${mutedStrong}`}>Cerca nella rubrica</span>
