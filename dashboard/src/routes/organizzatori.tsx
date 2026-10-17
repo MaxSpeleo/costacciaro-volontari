@@ -2216,24 +2216,81 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     return (
       <main className={`min-h-screen transition-colors ${shell}`}>
         <div className="mx-auto max-w-4xl px-3 py-4 sm:px-5 lg:py-7">
-          <header className="mb-4 flex items-center justify-between border-b-2 border-[#b85668] pb-3">
-            <div>
-              <div className="font-black uppercase leading-none text-[#e7254b]">
-                <span className="block text-lg sm:text-2xl">Costacciaro</span>
-                <span className="block text-2xl sm:text-4xl">2026</span>
+          <header className="mb-0 border-b-2 border-[#b85668] pb-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-black uppercase leading-none text-[#e7254b]">
+                  <span className="block text-lg sm:text-2xl">Costacciaro</span>
+                  <span className="block text-2xl sm:text-4xl">2026</span>
+                </div>
+                <h1 className="mt-2 text-lg font-black uppercase sm:text-2xl">Il mio Costacciaro</h1>
               </div>
-              <h1 className="mt-2 text-lg font-black uppercase sm:text-2xl">Il mio Costacciaro</h1>
+
+              {volunteerOnly && volunteerDeviceLinked && personalVolunteer ? (
+                <div className="min-w-0 max-w-[48%] text-right">
+                  <p className="truncate text-xs font-black uppercase sm:text-sm">{personalVolunteer.name}</p>
+                  {personalVolunteer.group ? <p className={`mt-0.5 truncate text-[9px] sm:text-[10px] ${muted}`}>{personalVolunteer.group}</p> : null}
+                  <button
+                    type="button"
+                    onClick={unlinkVolunteerDevice}
+                    className="mt-1 text-[8px] font-black uppercase underline underline-offset-2 opacity-70"
+                  >
+                    Cambia profilo
+                  </button>
+                </div>
+              ) : !volunteerOnly ? (
+                <button
+                  type="button"
+                  onClick={() => setPersonalOpen(false)}
+                  className="min-h-11 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase sm:text-xs"
+                >
+                  Torna alla dashboard
+                </button>
+              ) : null}
             </div>
-            {!volunteerOnly ? (
-              <button
-                type="button"
-                onClick={() => setPersonalOpen(false)}
-                className="min-h-11 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase sm:text-xs"
-              >
-                Torna alla dashboard
-              </button>
-            ) : null}
           </header>
+
+          {volunteerOnly && volunteerDeviceLinked ? (
+            <nav className={`sticky top-0 z-30 -mx-1 mb-3 mt-0 border-b-2 border-[#b85668] p-2 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVolunteerMessagesOpen(false);
+                    setVolunteerReplyOpen(false);
+                    setVolunteerAllTurnsOpen(false);
+                    document.getElementById("volunteer-turns")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="min-h-10 border px-2 text-[10px] font-black uppercase"
+                >
+                  I miei turni
+                </button>
+                <button
+                  type="button"
+                  onClick={openVolunteerMessages}
+                  className={`relative min-h-10 border px-2 text-[10px] font-black uppercase ${volunteerMessagesOpen ? "bg-[#b85668] text-white border-[#b85668]" : ""}`}
+                >
+                  Messaggi
+                  {unreadVolunteerMessageCount ? (
+                    <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[#b85668] px-1.5 py-0.5 text-[9px] text-white">
+                      {unreadVolunteerMessageCount}
+                    </span>
+                  ) : unconfirmedVolunteerMessageCount ? (
+                    <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full border border-[#b85668] px-1.5 py-0.5 text-[9px]">
+                      {unconfirmedVolunteerMessageCount}
+                    </span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVolunteerReplyOpen((current) => !current)}
+                  className={`min-h-10 border px-2 text-[10px] font-black uppercase ${volunteerReplyOpen ? "bg-[#b85668] text-white border-[#b85668]" : ""}`}
+                >
+                  Scrivi
+                </button>
+              </div>
+            </nav>
+          ) : null}
 
           <section className={`border-2 p-3 sm:p-5 ${panel}`}>
             {!(volunteerOnly && volunteerDeviceLinked) ? (
@@ -2270,36 +2327,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             ) : null}
 
             {personalVolunteer ? (
-              <div className="mt-5">
+              <div className={volunteerOnly && volunteerDeviceLinked ? "mt-3" : "mt-5"}>
                 {!(volunteerOnly && volunteerDeviceLinked) ? (
                                   <div className={`border-2 p-4 ${panelSoft}`}>
                                     <p className="text-[10px] font-black uppercase text-[#c76476]">Volontario</p>
                                     <h2 className="mt-1 text-xl font-black uppercase">{personalVolunteer.name}</h2>
                                     {personalVolunteer.group ? <p className={`mt-1 text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
                                   </div>
-                ) : (
-                  <div className={`border-2 p-3 ${panelSoft}`}>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[10px] font-black uppercase text-emerald-600">Il mio Costacciaro</p>
-                        <h2 className="text-lg font-black uppercase">{personalVolunteer.name}</h2>
-                        {personalVolunteer.group ? <p className={`text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
-                      </div>
-                      <span className="border border-emerald-600 px-2 py-1 text-[10px] font-black uppercase text-emerald-600">Associato</span>
-                    </div>
-                  </div>
-                )}
+                ) : null}
 
-                {volunteerOnly ? (
+                {volunteerOnly && !volunteerDeviceLinked ? (
                   <div className={`mt-3 border-2 p-4 ${panel}`}>
-                    {volunteerDeviceLinked ? (
-                      <div className="flex items-center justify-between gap-3">
-                        <p className={`text-xs ${muted}`}>Questo dispositivo è riconosciuto automaticamente.</p>
-                        <button type="button" onClick={unlinkVolunteerDevice} className="min-h-9 shrink-0 border px-3 text-[10px] font-black uppercase">
-                          Cambia profilo
-                        </button>
-                      </div>
-                    ) : (
                       <div>
                         <p className="text-[10px] font-black uppercase text-[#c76476]">Verifica in 2 passaggi</p>
                         <p className={`mt-1 text-xs ${muted}`}>Usa i dati già forniti nella candidatura. Non devi aprire la posta.</p>
@@ -2337,52 +2375,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                         </button>
                         {volunteerPairError ? <p className="mt-2 text-xs font-bold text-[#c76476]">{volunteerPairError}</p> : null}
                       </div>
-                    )}
                   </div>
                 ) : null}
 
                 {volunteerOnly && volunteerDeviceLinked ? (
                   <>
-                    <div className={`sticky top-0 z-20 mt-3 border-2 p-2 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
-                      <div className="grid grid-cols-3 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setVolunteerMessagesOpen(false);
-                            setVolunteerReplyOpen(false);
-                            setVolunteerAllTurnsOpen(false);
-                            document.getElementById("volunteer-turns")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                          }}
-                          className="min-h-10 border px-2 text-[10px] font-black uppercase"
-                        >
-                          I miei turni
-                        </button>
-                        <button
-                          type="button"
-                          onClick={openVolunteerMessages}
-                          className={`relative min-h-10 border px-2 text-[10px] font-black uppercase ${volunteerMessagesOpen ? "bg-[#b85668] text-white border-[#b85668]" : ""}`}
-                        >
-                          Messaggi
-                          {unreadVolunteerMessageCount ? (
-                            <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[#b85668] px-1.5 py-0.5 text-[9px] text-white">
-                              {unreadVolunteerMessageCount}
-                            </span>
-                          ) : unconfirmedVolunteerMessageCount ? (
-                            <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full border border-[#b85668] px-1.5 py-0.5 text-[9px]">
-                              {unconfirmedVolunteerMessageCount}
-                            </span>
-                          ) : null}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setVolunteerReplyOpen((current) => !current)}
-                          className={`min-h-10 border px-2 text-[10px] font-black uppercase ${volunteerReplyOpen ? "bg-[#b85668] text-white border-[#b85668]" : ""}`}
-                        >
-                          Scrivi
-                        </button>
-                      </div>
-                    </div>
-
                     {volunteerMessagesOpen ? (
                       <div className={`mt-3 border-2 p-4 ${panel}`}>
                         <div className="flex items-center justify-between gap-3">
