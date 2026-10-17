@@ -193,3 +193,97 @@ export function subscribeOperationalDashboard(onChange: () => void) {
     void supabase.removeChannel(channel);
   };
 }
+
+export type DashboardMessageSummary = {
+  id: string;
+  messageType: "notice" | "direct" | "team" | "shift";
+  title: string;
+  body: string;
+  urgent: boolean;
+  targetLabel: string;
+  createdAt: string;
+  recipientCount: number;
+  readCount: number;
+  acknowledgedCount: number;
+};
+
+export type VolunteerMessage = {
+  id: string;
+  title: string;
+  body: string;
+  urgent: boolean;
+  createdAt: string;
+  readAt?: string;
+  acknowledgedAt?: string;
+  messageType: "notice" | "direct" | "team" | "shift";
+};
+
+export async function sendDashboardMessage(input: {
+  messageType: "notice" | "direct" | "team" | "shift";
+  title: string;
+  body: string;
+  urgent?: boolean;
+  targetVolunteerId?: string;
+  targetTeamId?: string;
+  targetDay?: string;
+  targetSlot?: string;
+  targetActivity?: string;
+}) {
+  const { data, error } = await supabase.rpc("dashboard_send_message_working", {
+    p_message_type: input.messageType,
+    p_title: input.title,
+    p_body: input.body,
+    p_urgent: Boolean(input.urgent),
+    p_target_volunteer_id: input.targetVolunteerId || null,
+    p_target_team_id: input.targetTeamId || null,
+    p_target_day: input.targetDay || null,
+    p_target_slot: input.targetSlot || null,
+    p_target_activity: input.targetActivity || null,
+  });
+  if (error) throw error;
+  return data as { ok: boolean; message_id: string; recipient_count: number };
+}
+
+export async function loadDashboardMessages() {
+  const { data, error } = await supabase.rpc("dashboard_list_messages_working");
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    messageType: row.message_type,
+    title: row.title,
+    body: row.body,
+    urgent: Boolean(row.urgent),
+    targetLabel: row.target_label ?? "",
+    createdAt: row.created_at,
+    recipientCount: Number(row.recipient_count ?? 0),
+    readCount: Number(row.read_count ?? 0),
+    acknowledgedCount: Number(row.acknowledged_count ?? 0),
+  })) as DashboardMessageSummary[];
+}
+
+export async function loadVolunteerMessages(deviceToken: string) {
+  const { data, error } = await supabase.rpc("dashboard_get_device_messages", {
+    p_device_token: deviceToken,
+  });
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    body: row.body,
+    urgent: Boolean(row.urgent),
+    createdAt: row.created_at,
+    readAt: row.read_at ?? undefined,
+    acknowledgedAt: row.acknowledged_at ?? undefined,
+    messageType: row.message_type,
+  })) as VolunteerMessage[];
+}
+
+export async function markVolunteerMessage(deviceToken: string, messageId: string, acknowledge = false) {
+  const { data, error } = await supabase.rpc("dashboard_mark_device_message", {
+    p_device_token: deviceToken,
+    p_message_id: messageId,
+    p_acknowledge: acknowledge,
+  });
+  if (error) throw error;
+  return data as { ok: boolean };
+}
