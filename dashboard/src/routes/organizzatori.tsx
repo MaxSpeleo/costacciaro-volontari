@@ -1333,7 +1333,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [contextGuideStep, setContextGuideStep] = useState<number | null>(null);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
-  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities">("overview");
+  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns">("overview");
   const [guideHighlight, setGuideHighlight] = useState("");
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
@@ -2464,6 +2464,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     contacts: ["Cerca il volontario", "Usa la rubrica per trovare la persona.", "Apri il contatto desiderato; non inviare comunicazioni automaticamente."],
     messages: ["Apri le comunicazioni", "Scegli a chi scrivere e componi il messaggio.", "Rileggi destinatari e testo prima dell'invio."],
     activities: ["Consulta le attività", "Individua l'attività o il sottogruppo da gestire.", "Verifica i cambiamenti prima di chiudere."],
+    regia: ["Apri le priorità operative", "Controlla turni e squadre da presidiare nella regia.", "Apri il turno interessato e verifica le assegnazioni."],
+    myturns: ["Apri l’elenco delle persone", "Cerca il volontario e controlla i turni assegnati.", "Verifica data, fascia e attività; per correggere torna alla gestione squadre."],
     overview: ["Panoramica", "Consulta i dati riepilogativi.", "Scegli un'altra operazione quando necessario."],
   } as const;
   function contextGuide() {
@@ -2495,7 +2497,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities") {
       goToDashboardTop();
     } else {
-      navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "people" || choice === "assign" ? "people-workspace" : "turno-workspace");
+      navigateDashboardSection(choice === "priority" || choice === "regia" ? "priorities-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
       if (choice === "staffing") setEditingTeam(true);
     }
   }
@@ -3594,6 +3596,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   ["staffing","Configura un turno","Apri la modifica di fabbisogno e turno"],
                   ["priority","Risolvi posti scoperti","Apri le priorità da gestire"],
                   ["people","Gestisci squadre","Apri la selezione e le assegnazioni"],
+                  ["assign","Proponi assegnazioni","Controlla le proposte prima di confermarle"],
+                  ["regia","Regia operativa","Controlla criticità e turni da presidiare"],
+                  ["myturns","Controlla turni di un volontario","Cerca una persona e verifica le assegnazioni"],
                   ["contacts","Trova un contatto","Apri la ricerca dei volontari"],
                   ["messages","Invia un messaggio","Apri le comunicazioni"],
                   ["activities","Gestisci attività","Apri le attività e i sottogruppi"],
@@ -3688,7 +3693,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="priorities-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-4 ${attentionIssueCount ? "border-[#b85668] bg-[#b85668]/10" : isLight ? "border-emerald-600/50 bg-emerald-50" : "border-emerald-700/50 bg-emerald-950/20"} ${activeWorkspace !== "priorities-workspace" ? "hidden" : ""}`}>
-          {guideChoice === "priority" ? contextGuide() : null}
+          {(guideChoice === "priority" || guideChoice === "regia") ? contextGuide() : null}
           <div className="flex items-center gap-2">
             {attentionIssueCount ? <AlertTriangle className="size-5 text-[#c76476]" /> : <CheckCircle2 className="size-5 text-emerald-600" />}
             <div>
@@ -3887,7 +3892,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-20 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
-          {guidedAssignmentStep === null && (guideChoice === "people" || guideChoice === "assign") ? <div className="col-span-full">{contextGuide()}</div> : null}
+          {guidedAssignmentStep === null && (guideChoice === "people" || guideChoice === "assign" || guideChoice === "myturns") ? <div className="col-span-full">{contextGuide()}</div> : null}
           {guidedAssignmentStep !== null && guidedAssignmentStep >= 2 ? (
             <div className={`sticky top-0 z-30 col-span-full border-2 border-amber-400 p-2 shadow-lg ${isLight ? "bg-white" : "bg-ink"}`}>
               {guideActions(guidedAssignmentStep)}
