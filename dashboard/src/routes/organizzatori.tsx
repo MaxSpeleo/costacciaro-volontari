@@ -1292,6 +1292,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [volunteerReplyFeedback, setVolunteerReplyFeedback] = useState("");
   const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(false);
   const lastVolunteerUnreadRef = useRef(0);
+  const [volunteerMessagesOpen, setVolunteerMessagesOpen] = useState(false);
+  const [volunteerReplyOpen, setVolunteerReplyOpen] = useState(false);
+  const [volunteerAllTurnsOpen, setVolunteerAllTurnsOpen] = useState(false);
+  const [messagePane, setMessagePane] = useState<"compose" | "sent" | "inbox">("compose");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
@@ -1630,14 +1634,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         const unread = items.filter((item) => !item.readAt);
         if (unread.length > lastVolunteerUnreadRef.current) playMessageBeep();
         lastVolunteerUnreadRef.current = unread.length;
-        if (unread.length) {
-          await Promise.allSettled(unread.map((item) => markVolunteerMessage(token, item.id, false)));
-        }
-        const refreshed = unread.length ? await loadVolunteerMessages(token) : items;
-        if (!cancelled) {
-          setVolunteerMessages(refreshed);
-          lastVolunteerUnreadRef.current = refreshed.filter((item) => !item.readAt).length;
-        }
+        if (!cancelled) setVolunteerMessages(items);
       } catch {
         if (!cancelled) setVolunteerMessages([]);
       }
@@ -1735,6 +1732,20 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     }
   }
 
+  async function openVolunteerMessages() {
+    setVolunteerMessagesOpen(true);
+    const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
+    if (!token) return;
+    const unread = volunteerMessages.filter((item) => !item.readAt);
+    if (!unread.length) return;
+    await Promise.allSettled(unread.map((item) => markVolunteerMessage(token, item.id, false)));
+    try {
+      const refreshed = await loadVolunteerMessages(token);
+      setVolunteerMessages(refreshed);
+      lastVolunteerUnreadRef.current = refreshed.filter((item) => !item.readAt).length;
+    } catch {}
+  }
+
   async function acknowledgeVolunteerMessage(messageId: string) {
     const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
     if (!token) return;
@@ -1776,6 +1787,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       .slice(0, 8);
   }, [activeVolunteers, messageTargetQuery]);
   const unreadVolunteerInboxCount = volunteerInbox.filter((m) => !m.readAt).length;
+  const unreadVolunteerMessageCount = volunteerMessages.filter((m) => !m.readAt).length;
+  const unconfirmedVolunteerMessageCount = volunteerMessages.filter((m) => m.urgent && !m.acknowledgedAt).length;
 
   function switchDataMode(nextMode: "test" | "live") {
     if (nextMode === dataMode) return;
