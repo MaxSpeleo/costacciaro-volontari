@@ -1325,8 +1325,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     label: string;
   } | null>(null);
   const [activeWorkspace, setActiveWorkspace] = useState<
-    "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace"
-  >("places-workspace");
+    "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace" | null
+  >(null);
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | null>(null);
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
@@ -2770,28 +2770,28 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     <main className={`min-h-screen transition-colors ${shell}`}>
       <div className="mx-auto max-w-[1600px] px-3 py-4 sm:px-4 md:px-5 lg:px-8 xl:px-10 lg:py-7">
         <header className="mb-4 border-b-2 border-[#b85668] pb-3 sm:mb-5 lg:mb-6 lg:pb-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex min-w-0 items-center gap-2 sm:items-start sm:gap-3">
-              <div className="flex h-14 w-28 shrink-0 items-center justify-start sm:h-24 sm:w-48 lg:h-28 lg:w-56">
+          <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-4 sm:flex-nowrap sm:gap-6">
+              <div className="flex h-20 w-40 shrink-0 items-center justify-start sm:h-24 sm:w-52 lg:h-28 lg:w-60">
                 <img
                   src={costacciaroLogoDataUri}
                   style={{ filter: "brightness(0) saturate(100%) invert(26%) sepia(86%) saturate(3386%) hue-rotate(330deg) brightness(98%) contrast(93%)" }}
                   alt="Costacciaro 2026"
-                  className="h-auto w-full max-w-[220px] object-contain object-left sm:max-w-[360px]"
+                  className="h-auto w-full object-contain object-left"
                 />
               </div>
               <div className="min-w-0">
-                <h1 className="mt-1 text-lg font-black uppercase leading-[0.95] sm:text-2xl lg:text-4xl">
-                  Dashboard Controllo
+                <h1 className="text-xl font-black uppercase leading-tight tracking-tight sm:text-2xl lg:text-3xl xl:text-4xl">
+                  Dashboard di controllo
                 </h1>
                 <p className={`mt-1 max-w-2xl text-[10px] leading-snug sm:text-xs lg:text-sm ${muted}`}>
-                  Gestione volontari · <span className="text-[#c76476]">{dataMode === "test" ? "PROVA" : "OPERATIVO"}</span>
+                  Pannello organizzatori · Gestione volontari
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-stretch">
-            <div className="col-span-full flex flex-wrap items-center gap-2 sm:mr-2">
+            <div className="flex flex-wrap items-center gap-2 border-t border-[#b85668]/40 pt-3">
+            <div className="flex flex-wrap items-center gap-2 sm:mr-4">
               <button type="button" onClick={() => switchDataMode("test")}
                 className={`min-h-11 border-2 px-3 text-[10px] font-black uppercase sm:text-xs ${dataMode === "test" ? "border-amber-500 bg-amber-500 text-black" : "border-[#b85668]"}`}>
                 Prova
@@ -3424,11 +3424,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             >
               ↑
             </button>
-            <button type="button" onClick={() => navigateDashboardSection("places-workspace")} className={`min-h-10 min-w-[120px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "places-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Sale e presidi</button>
-            <button type="button" onClick={() => navigateDashboardSection("priorities-workspace")} className={`min-h-10 min-w-[92px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "priorities-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Priorità</button>
-            <button type="button" onClick={() => navigateDashboardSection("coverage-workspace")} className={`min-h-10 min-w-[108px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "coverage-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Regia turno</button>
-            <button type="button" onClick={() => navigateDashboardSection("turno-workspace")} className={`min-h-10 min-w-[125px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "turno-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Turno selezionato</button>
-            <button type="button" onClick={() => navigateDashboardSection("people-workspace")} className={`min-h-10 min-w-[88px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "people-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Persone</button>
+            <button type="button" onClick={() => activeWorkspace === "places-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("places-workspace")} className={`min-h-10 min-w-[120px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "places-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Sale e presidi</button>
+            <button type="button" onClick={() => activeWorkspace === "priorities-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("priorities-workspace")} className={`min-h-10 min-w-[92px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "priorities-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Priorità</button>
+            <button type="button" onClick={() => activeWorkspace === "coverage-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("coverage-workspace")} className={`min-h-10 min-w-[108px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "coverage-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Regia turno</button>
+            <button type="button" onClick={() => activeWorkspace === "turno-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("turno-workspace")} className={`min-h-10 min-w-[125px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "turno-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Turno selezionato</button>
+            <button type="button" onClick={() => activeWorkspace === "people-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("people-workspace")} className={`min-h-10 min-w-[88px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "people-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Persone</button>
           </div>
         </nav>
 
