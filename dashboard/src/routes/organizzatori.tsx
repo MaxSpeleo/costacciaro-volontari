@@ -32,7 +32,8 @@ import { supabase } from "@/lib/supabase";
 import { loadOperationalDashboard,
   loadTestVolunteerSnapshot, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard,
   loadDashboardMessages, loadVolunteerMessages, markVolunteerMessage, sendDashboardMessage,
-  type DashboardMessageSummary, type VolunteerMessage } from "@/lib/dashboard-operational";
+  loadVolunteerInboxMessages, markVolunteerInboxRead, sendVolunteerInboxMessage,
+  type DashboardMessageSummary, type VolunteerMessage, type VolunteerInboxMessage } from "@/lib/dashboard-operational";
 
 export const Route = createFileRoute("/organizzatori")({
   head: () => ({
@@ -1284,6 +1285,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [messageUrgent, setMessageUrgent] = useState(false);
   const [messageBusy, setMessageBusy] = useState(false);
   const [messageError, setMessageError] = useState("");
+  const [volunteerInbox, setVolunteerInbox] = useState<VolunteerInboxMessage[]>([]);
+  const [volunteerReply, setVolunteerReply] = useState("");
+  const [volunteerReplyBusy, setVolunteerReplyBusy] = useState(false);
+  const [volunteerReplyFeedback, setVolunteerReplyFeedback] = useState("");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
@@ -1544,9 +1549,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   useEffect(() => {
     if (!messagesOpen || volunteerOnly || dataMode !== "live") return;
-    loadDashboardMessages()
-      .then(setDashboardMessages)
-      .catch(() => setMessageError("Caricamento messaggi non riuscito."));
+    let cancelled = false;
+
+    async function refreshMessages() {
+      try {
+        const [sent, inbox] = await Promise.all([
+          loadDashboardMessages(),
+          loadVolunteerInboxMessages(),
+        ]);
+        if (cancelled) return;
+        setDashboardMessages(sent);
+        setVolunteerInbox(inbox);
+        setMessageError("");
+      } catch {
+        if (!cancelled) setMessageError("Caricamento messaggi non riuscito.");
+      }
+    }
+
+    refreshMessages();
+    const timer = window.setInterval(refreshMessages, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [messagesOpen, volunteerOnly, dataMode]);
 
   useEffect(() => {
@@ -1556,18 +1581,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     }
     const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
     if (!token) return;
+    let cancelled = false;
 
-    loadVolunteerMessages(token)
-      .then(async (items) => {
-        setVolunteerMessages(items);
+    async function refreshVolunteerMessages() {
+      try {
+        const items = await loadVolunteerMessages(token);
+        if (cancelled) return;
         const unread = items.filter((item) => !item.readAt);
         if (unread.length) {
           await Promise.allSettled(unread.map((item) => markVolunteerMessage(token, item.id, false)));
-          const refreshed = await loadVolunteerMessages(token);
-          setVolunteerMessages(refreshed);
         }
-      })
-      .catch(() => setVolunteerMessages([]));
+        const refreshed = unread.length ? await loadVolunteerMessages(token) : items;
+        if (!cancelled) setVolunteerMessages(refreshed);
+      } catch {
+        if (!cancelled) setVolunteerMessages([]);
+      }
+    }
+
+    refreshVolunteerMessages();
+    const timer = window.setInterval(refreshVolunteerMessages, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [volunteerOnly, volunteerDeviceLinked]);
 
   async function submitDashboardMessage() {
@@ -1619,6 +1655,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     try {
       await markVolunteerMessage(token, messageId, true);
       setVolunteerMessages(await loadVolunteerMessages(token));
+    } catch {}
+  }
+
+  async function sendVolunteerReply() {
+    const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
+    if (!token || !volunteerReply.trim()) return;
+    setVolunteerReplyBusy(true);
+    setVolunteerReplyFeedback("");
+    try {
+      await sendVolunteerInboxMessage(token, volunteerReply.trim());
+      setVolunteerReply("");
+      setVolunteerReplyFeedback("Messaggio inviato all'organizzazione.");
+    } catch {
+      setVolunteerReplyFeedback("Invio non riuscito.");
+    } finally {
+      setVolunteerReplyBusy(false);
+    }
+  }
+
+  async function markInboxRead(id: string) {
+    try {
+      await markVolunteerInboxRead(id);
+      setVolunteerInbox(await loadVolunteerInboxMessages());
     } catch {}
   }
 
