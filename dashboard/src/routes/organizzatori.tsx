@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import { costacciaroLogoDataUri } from "@/lib/costacciaro-logo";
 import { loadOperationalDashboard,
   loadTestVolunteerSnapshot, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard,
   loadDashboardMessages, loadVolunteerMessages, markVolunteerMessage, sendDashboardMessage,
@@ -2219,10 +2220,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           <header className="mb-0 border-b-2 border-[#b85668] pb-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="font-black uppercase leading-none text-[#e7254b]">
-                  <span className="block text-lg sm:text-2xl">Costacciaro</span>
-                  <span className="block text-2xl sm:text-4xl">2026</span>
-                </div>
+                <img
+                  src={costacciaroLogoDataUri}
+                  alt="Costacciaro 2026"
+                  className="h-auto w-[190px] max-w-[45vw] object-contain object-left sm:w-[260px]"
+                />
                 <h1 className="mt-2 text-lg font-black uppercase sm:text-2xl">Il mio Costacciaro</h1>
               </div>
 
@@ -2548,10 +2550,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-center gap-2 sm:items-start sm:gap-3">
               <div className="flex h-14 w-28 shrink-0 items-center justify-start sm:h-24 sm:w-48 lg:h-28 lg:w-56">
-                <div className="font-black uppercase leading-none text-[#e7254b]">
-                  <span className="block text-lg sm:text-3xl">Costacciaro</span>
-                  <span className="block text-2xl sm:text-5xl">2026</span>
-                </div>
+                <img
+                  src={costacciaroLogoDataUri}
+                  alt="Costacciaro 2026"
+                  className="h-auto w-full max-w-[220px] object-contain object-left sm:max-w-[360px]"
+                />
               </div>
               <div className="min-w-0">
                 <h1 className="mt-1 text-lg font-black uppercase leading-[0.95] sm:text-2xl lg:text-4xl">
