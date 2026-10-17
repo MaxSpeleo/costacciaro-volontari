@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
+  ArrowUp,
   CalendarDays,
   Check,
   CheckCircle2,
