@@ -1328,6 +1328,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace" | null
   >(null);
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
+  const [guidedMode, setGuidedMode] = useState(true);
+  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities">("overview");
+  const [guideHighlight, setGuideHighlight] = useState("");
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
@@ -2392,6 +2395,21 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       return;
     }
     navigateDashboardSection(id);
+  }
+
+  function guideTo(choice: typeof guideChoice) {
+    setGuideChoice(choice);
+    setHelpTopic(null);
+    setDirectoryOpen(choice === "contacts");
+    setMessagesOpen(choice === "messages");
+    setCatalogOpen(choice === "activities");
+    setGuideHighlight(choice);
+    if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities") {
+      goToDashboardTop();
+    } else {
+      navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "people" || choice === "assign" ? "people-workspace" : "turno-workspace");
+      if (choice === "staffing") setEditingTeam(true);
+    }
   }
 
   function goToDashboardTop() {
@@ -3460,6 +3478,37 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           {dataMode === "live" && liveSyncLabel ? <span className={liveError ? "text-[#c76476]" : mutedStrong}>{liveError || liveSyncLabel}</span> : null}
         </section>
 
+        {guidedMode ? (
+          <section className={`mb-3 border-2 border-[#b85668] p-3 ${panel}`} aria-label="Assistente guidato organizzatori">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CircleHelp className="size-5 text-[#c76476]" />
+                <div><strong className="text-sm uppercase">Guida rapida</strong><p className={`text-xs ${muted}`}>Che cosa vuoi fare? Ti porto alla funzione giusta.</p></div>
+              </div>
+              <button type="button" onClick={() => setGuidedMode(false)} className="border px-2 py-1 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {([
+                ["staffing","Definisci persone necessarie","Scegli data, fascia, attività e numero di volontari richiesti."],
+                ["assign","Proponi assegnazioni","Genera un'anteprima da approvare, senza modificare squadre esistenti."],
+                ["priority","Risolvi priorità","Mostra i turni ancora scoperti e le situazioni da controllare."],
+                ["people","Gestisci squadre","Assegna o sposta manualmente i volontari."],
+                ["contacts","Trova contatti","Cerca telefono, WhatsApp ed email dei volontari."],
+                ["messages","Invia messaggi","Apri le comunicazioni interne."],
+                ["activities","Gestisci attività","Modifica le attività e i sottogruppi."],
+                ["overview","Torna al riepilogo","Chiude le sezioni e mostra la panoramica."]
+              ] as const).map(([id,label,description]) => (
+                <div key={id} className={`flex items-center border ${guideHighlight === id ? "border-amber-400 ring-2 ring-amber-400" : "border-[#b85668]/50"}`}>
+                  <button type="button" onClick={() => guideTo(id)} className="min-h-12 flex-1 p-2 text-left text-xs font-bold">{label}</button>
+                  <button type="button" onClick={() => {setGuideChoice(id);setGuideHighlight(id);setFeedback(description);}} className="min-h-12 border-l px-2" aria-label={`Spiega: ${label}`} title={description}><CircleHelp className="size-4" /></button>
+                </div>
+              ))}
+            </div>
+            {guideHighlight ? <p role="status" className="mt-2 text-xs">Sezione evidenziata: {guideHighlight === "staffing" ? "Modifica turno → Persone necessarie" : guideHighlight === "assign" ? "Persone → Proponi assegnazioni" : "usa il pulsante selezionato"}. Puoi aprire il ? per una spiegazione.</p> : null}
+          </section>
+        ) : (
+          <button type="button" onClick={() => setGuidedMode(true)} className="mb-3 flex min-h-10 items-center gap-2 border-2 border-[#b85668] px-3 text-xs font-black uppercase"><CircleHelp className="size-4" /> Apri guida rapida</button>
+        )}
         <nav className={`sticky top-0 z-30 mb-3 border-2 border-[#b85668] p-1 shadow-lg ${isLight ? "bg-paper/95" : "bg-ink/95"} backdrop-blur`}>
           <div className="flex gap-1 overflow-x-auto">
             <button
