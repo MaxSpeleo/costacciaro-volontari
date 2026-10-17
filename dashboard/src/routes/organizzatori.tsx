@@ -1802,7 +1802,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     : 0;
   const coverageLabel = selectedTeam.target > 0 ? `${coverage}%` : "—";
 
-  function goToSection(id: "turno-workspace" | "people-workspace" | "coverage-workspace") {
+  function goToSection(id: "places-workspace" | "priorities-workspace" | "turno-workspace" | "people-workspace" | "coverage-workspace") {
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
@@ -2467,6 +2467,24 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
           </div>
         </section>
+
+        {focusContext ? (
+          <button
+            type="button"
+            onClick={() => {
+              setPeopleFilterOpen(false);
+              setMobileTab("panoramica");
+              setEditingTeam(false);
+              setFocusContext("");
+              goToSection("places-workspace");
+            }}
+            className="fixed bottom-4 right-4 z-40 flex min-h-11 items-center gap-2 border-2 border-[#b85668] bg-ink px-4 text-xs font-black uppercase text-paper shadow-lg hover:bg-[#b85668] hover:text-white"
+            aria-label="Torna a Sale e presidi"
+          >
+            <ArrowUp className="size-4" />
+            Sale e presidi
+          </button>
+        ) : null}
 
         <section id="turno-workspace" className={`mt-3 scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""}`}>
           {focusContext ? (
