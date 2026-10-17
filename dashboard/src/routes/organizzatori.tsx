@@ -1334,7 +1334,6 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
   const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns" | "inbox" | "sent" | "personal" | "preferences">("overview");
-  const [guideHighlight, setGuideHighlight] = useState("");
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
@@ -2464,7 +2463,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     contacts: ["Cerca il volontario", "Usa la rubrica per trovare la persona.", "Apri il contatto desiderato; non inviare comunicazioni automaticamente."],
     messages: ["Apri le comunicazioni", "Scegli a chi scrivere e componi il messaggio.", "Rileggi destinatari e testo prima dell'invio."],
     activities: ["Consulta le attività", "Individua l'attività o il sottogruppo da gestire.", "Verifica i cambiamenti prima di chiudere."],
-    regia: ["Apri le priorità operative", "Controlla turni e squadre da presidiare nella regia.", "Apri il turno interessato e verifica le assegnazioni."],
+    regia: ["Apri la regia del turno", "Controlla turni e squadre da presidiare nella regia.", "Apri il turno interessato e verifica le assegnazioni."],
     myturns: ["Apri l’elenco delle persone", "Cerca il volontario e controlla i turni assegnati.", "Verifica data, fascia e attività; per correggere torna alla gestione squadre."],
     inbox: ["Apri i messaggi ricevuti", "Leggi le comunicazioni e seleziona quelle da gestire.", "Se opportuno, segna il messaggio come letto o archivialo."],
     sent: ["Apri i messaggi inviati", "Controlla destinatari e cronologia degli invii.", "Verifica le comunicazioni prima di chiudere."],
@@ -2500,9 +2499,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     if (choice === "inbox") setMessagePane("inbox");
     if (choice === "sent") setMessagePane("sent");
     if (choice === "messages") setMessagePane("compose");
-    if (choice === "personal") setPersonalOpen(true);
+    setPersonalOpen(choice === "personal");
     setCatalogOpen(choice === "activities");
-    setGuideHighlight(choice);
     if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities" || choice === "inbox" || choice === "sent" || choice === "personal" || choice === "preferences") {
       goToDashboardTop();
     } else {
