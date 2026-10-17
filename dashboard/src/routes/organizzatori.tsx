@@ -2478,10 +2478,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     return (
       <div role="region" aria-label="Indicazioni operative" className={`my-3 border-2 border-amber-400 p-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
         <strong className="text-sm">Passaggio {contextGuideStep + 1} di 3 · {instructions[contextGuideStep]}</strong>
-        <p className="mt-1 text-xs">{contextGuideStep === 0 ? "La sezione richiesta è aperta. Segui le indicazioni e poi premi Continua." : instructions[contextGuideStep]}</p>
+        <p className="mt-1 text-xs">{contextGuideStep === 0 ? "La sezione richiesta è aperta. Esegui il controllo indicato; la guida non modifica dati." : instructions[contextGuideStep]}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           {contextGuideStep > 0 ? <button type="button" onClick={() => setContextGuideStep(contextGuideStep - 1)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">Indietro</button> : null}
-          <button type="button" onClick={() => setContextGuideStep(contextGuideStep === 2 ? null : contextGuideStep + 1)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black">{contextGuideStep === 2 ? "Termina guida" : "Continua →"}</button>
+          <button type="button" onClick={() => setContextGuideStep(contextGuideStep === 2 ? null : contextGuideStep + 1)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black">{contextGuideStep === 2 ? "Chiudi istruzioni" : "Ho verificato · Avanti →"}</button>
           <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
         </div>
       </div>
