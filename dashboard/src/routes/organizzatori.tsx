@@ -1329,6 +1329,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   >(null);
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [guidedMode, setGuidedMode] = useState(true);
+  const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities">("overview");
   const [guideHighlight, setGuideHighlight] = useState("");
   const [editingTeam, setEditingTeam] = useState(false);
@@ -2395,6 +2396,18 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       return;
     }
     navigateDashboardSection(id);
+  }
+
+  const assignmentGuide = [
+    { title: "Scegli il turno", details: "Imposta giorno, fascia e attività; verifica il luogo e il numero di persone necessarie.", target: "turno-workspace" as const },
+    { title: "Controlla le priorità", details: "Verifica posti mancanti e possibili criticità prima di assegnare.", target: "priorities-workspace" as const },
+    { title: "Trova volontari compatibili", details: "Apri l'elenco persone e verifica le disponibilità e gli eventuali impegni sovrapposti.", target: "people-workspace" as const },
+    { title: "Assegna e controlla", details: "Effettua l'assegnazione nella sezione persone, poi ricontrolla squadra e copertura. Nessuna modifica è automatica.", target: "people-workspace" as const },
+  ];
+  function navigateAssignmentGuide(step: number) {
+    const next = Math.max(0, Math.min(step, assignmentGuide.length - 1));
+    setGuidedAssignmentStep(next);
+    navigateDashboardSection(assignmentGuide[next].target);
   }
 
   function guideTo(choice: typeof guideChoice) {
@@ -3486,6 +3499,28 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <div><strong className="text-sm uppercase">Guida rapida</strong><p className={`text-xs ${muted}`}>Che cosa vuoi fare? Ti porto alla funzione giusta.</p></div>
               </div>
               <button type="button" onClick={() => setGuidedMode(false)} className="border px-2 py-1 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
+            </div>
+            <div className="mt-3 border-t border-[#b85668]/50 pt-3">
+              <button type="button" onClick={() => navigateAssignmentGuide(0)} className="min-h-11 border-2 border-[#b85668] px-3 py-2 text-sm font-black">
+                {guidedAssignmentStep === null ? "Guidami passo passo nell'assegnazione →" : "Ricomincia percorso guidato"}
+              </button>
+              {guidedAssignmentStep !== null ? (
+                <div className="mt-3 border-2 border-[#b85668] p-3" aria-live="polite">
+                  <p className="text-xs font-black uppercase">Passaggio {guidedAssignmentStep + 1} di {assignmentGuide.length}</p>
+                  <h3 className="mt-2 text-sm font-black">{assignmentGuide[guidedAssignmentStep].title}</h3>
+                  <p className="mt-1 text-sm">{assignmentGuide[guidedAssignmentStep].details}</p>
+                  <p className="mt-2 text-xs opacity-75">La guida ti mostra dove lavorare: non salva modifiche e non assegna persone da sola.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" disabled={guidedAssignmentStep === 0} onClick={() => navigateAssignmentGuide(guidedAssignmentStep - 1)} className="min-h-11 border px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
+                    {guidedAssignmentStep < assignmentGuide.length - 1 ? (
+                      <button type="button" onClick={() => navigateAssignmentGuide(guidedAssignmentStep + 1)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Prossimo passaggio →</button>
+                    ) : (
+                      <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-11 bg-[#b85668] px-3 text-xs font-black text-white">Ho verificato la squadra</button>
+                    )}
+                    <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-11 px-2 text-xs underline">Esci</button>
+                  </div>
+                </div>
+              ) : null}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {([
