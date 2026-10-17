@@ -327,3 +327,76 @@ export async function markVolunteerInboxRead(id: string) {
   if (error) throw error;
   return data as { ok: boolean };
 }
+
+
+export async function pairOrganizerDevice(email: string, phoneLast4: string, deviceToken: string) {
+  const { data, error } = await supabase.rpc("dashboard_pair_organizer_device", {
+    p_email: email,
+    p_phone_last4: phoneLast4,
+    p_device_token: deviceToken,
+  });
+  if (error) throw error;
+  return data as { ok: boolean; email?: string; label?: string };
+}
+
+export async function resolveOrganizerDevice(deviceToken: string) {
+  const { data, error } = await supabase.rpc("dashboard_resolve_organizer_device", {
+    p_device_token: deviceToken,
+  });
+  if (error) throw error;
+  return data as { ok: boolean; email?: string; label?: string };
+}
+
+export async function loadDashboardMessagesV2(archived = false) {
+  const { data, error } = await supabase.rpc("dashboard_list_messages_working_v2", {
+    p_archived: archived,
+  });
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    messageType: row.message_type,
+    title: row.title,
+    body: row.body,
+    urgent: Boolean(row.urgent),
+    targetLabel: row.target_label ?? "",
+    createdAt: row.created_at,
+    recipientCount: Number(row.recipient_count ?? 0),
+    readCount: Number(row.read_count ?? 0),
+    acknowledgedCount: Number(row.acknowledged_count ?? 0),
+    archived: Boolean(row.archived),
+  })) as Array<DashboardMessageSummary & { archived: boolean }>;
+}
+
+export async function archiveDashboardMessage(id: string, archived = true) {
+  const { data, error } = await supabase.rpc("dashboard_archive_message_working", {
+    p_id: id,
+    p_archived: archived,
+  });
+  if (error) throw error;
+  return data as { ok: boolean };
+}
+
+export async function loadVolunteerInboxMessagesV2(archived = false) {
+  const { data, error } = await supabase.rpc("dashboard_list_volunteer_inbox_working_v2", {
+    p_archived: archived,
+  });
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    volunteerId: row.volunteer_id,
+    volunteerName: row.volunteer_name,
+    body: row.body,
+    createdAt: row.created_at,
+    readAt: row.read_at ?? undefined,
+    archived: Boolean(row.archived),
+  })) as Array<VolunteerInboxMessage & { archived: boolean }>;
+}
+
+export async function archiveVolunteerInboxMessage(id: string, archived = true) {
+  const { data, error } = await supabase.rpc("dashboard_archive_inbox_working", {
+    p_id: id,
+    p_archived: archived,
+  });
+  if (error) throw error;
+  return data as { ok: boolean };
+}
