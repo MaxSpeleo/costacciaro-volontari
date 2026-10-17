@@ -3433,6 +3433,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             >
               ↑
             </button>
+            <button type="button" onClick={() => { setActiveWorkspace(null); goToDashboardTop(); }} className={`min-h-10 min-w-[100px] shrink-0 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === null ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Panoramica</button>
             <button type="button" onClick={() => activeWorkspace === "places-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("places-workspace")} className={`min-h-10 min-w-[120px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "places-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Sale e presidi</button>
             <button type="button" onClick={() => activeWorkspace === "priorities-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("priorities-workspace")} className={`min-h-10 min-w-[92px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "priorities-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Priorità</button>
             <button type="button" onClick={() => activeWorkspace === "coverage-workspace" ? setActiveWorkspace(null) : navigateDashboardSection("coverage-workspace")} className={`min-h-10 min-w-[108px] flex-1 border px-2 text-[10px] font-black uppercase sm:text-xs ${activeWorkspace === "coverage-workspace" ? "bg-[#b85668] text-white border-[#b85668]" : panelSoft}`}>Regia turno</button>
@@ -3441,7 +3442,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </div>
         </nav>
 
-        <section id="places-workspace" className={`mb-3 scroll-mt-4 border-2 p-3 lg:p-5 ${panel} ${activeWorkspace !== "places-workspace" ? "hidden" : ""}`}>
+        <section id="places-workspace" className={`mb-3 max-h-[66vh] overflow-y-auto scroll-mt-4 border-2 p-3 lg:p-5 ${panel} ${activeWorkspace !== "places-workspace" ? "hidden" : ""}`}>
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Sale e presidi</p>
@@ -3491,7 +3492,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           ))}
         </section>
 
-        <section className="grid grid-cols-4 gap-1.5 lg:gap-3">
+        <section className={`grid grid-cols-2 gap-1.5 sm:grid-cols-4 lg:gap-3 ${activeWorkspace !== null ? "hidden" : ""}`}>
           <Kpi label="Volontari" value={String(activeVolunteers.length)} light={isLight} />
           <Kpi label="Disponibili per questo turno" value={String(compatible.length)} light={isLight} />
           <Kpi label="In squadra" value={String(teamMembers.length)} light={isLight} />
@@ -3693,7 +3694,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </div>
         </section>
 
-        <section id="people-workspace" className={`mt-3 scroll-mt-4 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
+        <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-4 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
           <div className={`border-2 p-3 lg:min-h-[560px] lg:p-5 ${panel} ${mobileTab !== "persone" ? "hidden lg:block" : ""} ${!peopleFilterOpen ? "lg:hidden" : ""}`}>
             {focusContext ? <div role="status" className={`relative z-0 mb-3 border-2 border-[#b85668] p-3 text-xs font-bold ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}><p className="mb-1 text-[10px] font-black uppercase text-[#c76476]">Perché sei qui</p>{focusContext}</div> : null}
             <div className="mb-2 flex items-center justify-between gap-2">
