@@ -34,6 +34,9 @@ import { loadOperationalDashboard,
   loadTestVolunteerSnapshot, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard,
   loadDashboardMessages, loadVolunteerMessages, markVolunteerMessage, sendDashboardMessage,
   loadVolunteerInboxMessages, markVolunteerInboxRead, sendVolunteerInboxMessage,
+  pairOrganizerDevice, resolveOrganizerDevice,
+  loadDashboardMessagesV2, archiveDashboardMessage,
+  loadVolunteerInboxMessagesV2, archiveVolunteerInboxMessage,
   type DashboardMessageSummary, type VolunteerMessage, type VolunteerInboxMessage } from "@/lib/dashboard-operational";
 
 export const Route = createFileRoute("/organizzatori")({
@@ -1297,9 +1300,20 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [volunteerReplyOpen, setVolunteerReplyOpen] = useState(false);
   const [volunteerAllTurnsOpen, setVolunteerAllTurnsOpen] = useState(false);
   const [messagePane, setMessagePane] = useState<"compose" | "sent" | "inbox">("compose");
+  const [organizerAccessReady, setOrganizerAccessReady] = useState(volunteerOnly);
+  const [organizerAccessGranted, setOrganizerAccessGranted] = useState(false);
+  const [organizerEmail, setOrganizerEmail] = useState("");
+  const [organizerPhone4, setOrganizerPhone4] = useState("");
+  const [organizerAccessBusy, setOrganizerAccessBusy] = useState(false);
+  const [organizerAccessError, setOrganizerAccessError] = useState("");
+  const [organizerLabel, setOrganizerLabel] = useState("");
+  const [sentArchiveOpen, setSentArchiveOpen] = useState(false);
+  const [inboxArchiveOpen, setInboxArchiveOpen] = useState(false);
+  const [archivedDashboardMessages, setArchivedDashboardMessages] = useState<Array<DashboardMessageSummary & { archived: boolean }>>([]);
+  const [archivedVolunteerInbox, setArchivedVolunteerInbox] = useState<Array<VolunteerInboxMessage & { archived: boolean }>>([]);
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
-  const openAccess = true;
+  const openAccess = volunteerOnly || organizerAccessGranted;
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveError, setLiveError] = useState("");
   const [liveSyncLabel, setLiveSyncLabel] = useState("");
@@ -1328,6 +1342,76 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     memberIds: [],
     pinned: false,
   }, [teams, day, slot, activity]);
+
+  useEffect(() => {
+    if (volunteerOnly) {
+      setOrganizerAccessReady(true);
+      return;
+    }
+    let cancelled = false;
+    const token = localStorage.getItem("costacciaro-organizer-device-token") || "";
+    if (!token) {
+      setOrganizerAccessReady(true);
+      return;
+    }
+
+    resolveOrganizerDevice(token)
+      .then((result) => {
+        if (cancelled) return;
+        if (result?.ok) {
+          setOrganizerAccessGranted(true);
+          setOrganizerLabel(result.label || result.email || "Organizzatore");
+        } else {
+          localStorage.removeItem("costacciaro-organizer-device-token");
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem("costacciaro-organizer-device-token");
+      })
+      .finally(() => {
+        if (!cancelled) setOrganizerAccessReady(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [volunteerOnly]);
+
+  function ensureOrganizerDeviceToken() {
+    let token = localStorage.getItem("costacciaro-organizer-device-token") || "";
+    if (!token) {
+      token = crypto.randomUUID() + "-" + crypto.randomUUID();
+      localStorage.setItem("costacciaro-organizer-device-token", token);
+    }
+    return token;
+  }
+
+  async function pairOrganizerAccess() {
+    if (!organizerEmail.trim() || organizerPhone4.length !== 4) return;
+    setOrganizerAccessBusy(true);
+    setOrganizerAccessError("");
+    try {
+      const token = ensureOrganizerDeviceToken();
+      const result = await pairOrganizerDevice(organizerEmail.trim(), organizerPhone4, token);
+      if (!result?.ok) {
+        setOrganizerAccessError("Verifica non riuscita. Controlla email e ultime 4 cifre del telefono.");
+        return;
+      }
+      setOrganizerAccessGranted(true);
+      setOrganizerLabel(result.label || result.email || "Organizzatore");
+      setOrganizerPhone4("");
+    } catch {
+      setOrganizerAccessError("Verifica non riuscita.");
+    } finally {
+      setOrganizerAccessBusy(false);
+    }
+  }
+
+  function unlinkOrganizerAccess() {
+    localStorage.removeItem("costacciaro-organizer-device-token");
+    setOrganizerAccessGranted(false);
+    setOrganizerLabel("");
+    setOrganizerEmail("");
+    setOrganizerPhone4("");
+  }
 
   useEffect(() => {
     loadTestVolunteerSnapshot()
@@ -1790,6 +1874,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const unreadVolunteerInboxCount = volunteerInbox.filter((m) => !m.readAt).length;
   const unreadVolunteerMessageCount = volunteerMessages.filter((m) => !m.readAt).length;
   const unconfirmedVolunteerMessageCount = volunteerMessages.filter((m) => m.urgent && !m.acknowledgedAt).length;
+  const pendingConfirmationsCount = dashboardMessages.filter((m) => m.urgent && m.acknowledgedCount < m.recipientCount).length;
+  const attentionIssueCount = underCoveredTeams.length + unreadVolunteerInboxCount + pendingConfirmationsCount;
 
   function switchDataMode(nextMode: "test" | "live") {
     if (nextMode === dataMode) return;
