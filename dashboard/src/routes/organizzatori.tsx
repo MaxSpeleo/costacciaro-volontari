@@ -1514,7 +1514,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setMobileTab("turno");
     setEditingTeam(true);
     setFocusContext(`${point.name.toUpperCase()} — ${day} · ${slot}. Il fabbisogno volontari è lasciato da definire agli organizzatori.`);
-    goToSection("turno-workspace");
+    goToSection("turno-workspace", true, "places-workspace");
   }
 
   const macroActivities = activities.filter((item) => !item.includes(" — "));
@@ -1833,9 +1833,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     return visible[0]?.id ?? null;
   }
 
-  function goToSection(id: DashboardSectionId, rememberOrigin = true) {
+  function goToSection(id: DashboardSectionId, rememberOrigin = true, originOverride: DashboardSectionId | null = null) {
     if (rememberOrigin) {
-      const origin = currentDashboardSection();
+      const origin = originOverride ?? currentDashboardSection();
       if (origin && origin !== id) {
         setReturnSection({ id: origin, label: sectionLabels[origin] });
       }
@@ -2405,17 +2405,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   setActivity(firstUnderCoveredTeam.activity);
                   setMobileTab("turno");
                   setFocusContext(`TURNI DA COPRIRE — aperto il primo turno incompleto: ${firstUnderCoveredTeam.day} · ${firstUnderCoveredTeam.slot} · ${firstUnderCoveredTeam.activity}. Mancano ${Math.max(0, firstUnderCoveredTeam.target - firstUnderCoveredTeam.memberIds.filter((id) => activeVolunteerIds.has(id)).length)} persone.`);
-                  goToSection("turno-workspace");
+                  goToSection("turno-workspace", true, "priorities-workspace");
                 }
               }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
                 <strong className="block text-sm">{underCoveredTeams.length} turni da coprire</strong>
                 <span className={`text-[10px] ${muted}`}>Tocca per aprire il primo turno incompleto</span>
               </button>
-              <button type="button" onClick={() => { setPeopleFilterOpen(true); setMobileTab("persone"); setFocusContext(`DISPONIBILI NELLA FASCIA — ${availableUnassignedCount} volontari sono disponibili e non ancora assegnati il ${day} · ${slot}. Qui sotto vedi ${compatible.length} persone compatibili con ${activity}; alcune possono risultare già impegnate o assegnate in base alla squadra selezionata.`); goToSection("people-workspace"); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
+              <button type="button" onClick={() => { setPeopleFilterOpen(true); setMobileTab("persone"); setFocusContext(`DISPONIBILI NELLA FASCIA — ${availableUnassignedCount} volontari sono disponibili e non ancora assegnati il ${day} · ${slot}. Qui sotto vedi ${compatible.length} persone compatibili con ${activity}; alcune possono risultare già impegnate o assegnate in base alla squadra selezionata.`); goToSection("people-workspace", true, "priorities-workspace"); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
                 <strong className="block text-sm">{availableUnassignedCount} disponibili nella fascia</strong>
                 <span className={`text-[10px] ${muted}`}>Non ancora assegnati · poi filtra i compatibili</span>
               </button>
-              <button type="button" onClick={() => { setMobileTab("panoramica"); setFocusContext(`POSTI ANCORA SCOPERTI — ${uncoveredPlaces} posti da coprire il ${day}. Le celle evidenziate mostrano esattamente quali attività e fasce sono incomplete; clicca una cella per gestirla.`); goToSection("coverage-workspace"); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
+              <button type="button" onClick={() => { setMobileTab("panoramica"); setFocusContext(`POSTI ANCORA SCOPERTI — ${uncoveredPlaces} posti da coprire il ${day}. Le celle evidenziate mostrano esattamente quali attività e fasce sono incomplete; clicca una cella per gestirla.`); goToSection("coverage-workspace", true, "priorities-workspace"); }} className={`min-h-14 border p-3 text-left ${panelSoft}`}>
                 <strong className="block text-sm">{uncoveredPlaces} posti ancora scoperti</strong>
                 <span className={`text-[10px] ${muted}`}>Rivedi il quadro complessivo</span>
               </button>
@@ -2463,7 +2463,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 const pct = targetDefined ? Math.min(100, Math.round((item.assigned / item.target) * 100)) : 0;
                 const complete = targetDefined && item.assigned >= item.target;
                 return (
-                  <button key={item.activity} type="button" onClick={() => { setActivity(item.activity); setSlot(item.slot); setMobileTab("turno"); setFocusContext(`${item.activity.toUpperCase()} — ${day} · ${item.slot}: ${complete ? "turno coperto" : `mancano ${item.target - item.assigned} persone`}. Qui puoi vedere i compatibili e gestire la squadra.`); goToSection("turno-workspace"); }}
+                  <button key={item.activity} type="button" onClick={() => { setActivity(item.activity); setSlot(item.slot); setMobileTab("turno"); setFocusContext(`${item.activity.toUpperCase()} — ${day} · ${item.slot}: ${complete ? "turno coperto" : `mancano ${item.target - item.assigned} persone`}. Qui puoi vedere i compatibili e gestire la squadra.`); goToSection("turno-workspace", true, "coverage-workspace"); }}
                     className="border-l-4 border-y border-r p-3 text-left transition-opacity hover:opacity-90"
                     style={activityTone(item.activity, isLight)}>
                     <div className="flex items-center justify-between gap-2">
@@ -2502,7 +2502,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                       const team = teams.find((t) => t.day === day && t.slot === s && t.activity === item);
                       const targetDefined = team ? team.target > 0 : false;
                       const short = team ? targetDefined && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target : false;
-                      return <button key={s} type="button" onClick={() => { setActivity(item); setSlot(s); setMobileTab("turno"); setFocusContext(`${item.toUpperCase()} — ${day} · ${s}: ${team ? `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/${team.target} assegnati` : "turno non ancora configurato"}. Sei nella gestione esatta di questa cella.`); goToSection("turno-workspace"); }}
+                      return <button key={s} type="button" onClick={() => { setActivity(item); setSlot(s); setMobileTab("turno"); setFocusContext(`${item.toUpperCase()} — ${day} · ${s}: ${team ? `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/${team.target} assegnati` : "turno non ancora configurato"}. Sei nella gestione esatta di questa cella.`); goToSection("turno-workspace", true, "coverage-workspace"); }}
                         className={`border p-2 text-center font-black ${team ? "" : muted}`}
                         style={team ? activityTone(item, isLight) : undefined}>
                         <span className={`mb-0.5 block text-[8px] font-bold uppercase lg:hidden ${muted}`}>{s}</span>
@@ -2566,7 +2566,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <strong>{day} · {slot} · {activity}</strong>
               <span className={`ml-2 ${muted}`}>{compatible.length} persone compatibili</span>
             </div>
-            <button type="button" onClick={() => { const next = !peopleFilterOpen; setPeopleFilterOpen(next); setMobileTab(next ? "persone" : "turno"); }}
+            <button type="button" onClick={() => {
+                const next = !peopleFilterOpen;
+                setPeopleFilterOpen(next);
+                setMobileTab(next ? "persone" : "turno");
+                if (next) {
+                  setReturnSection({ id: "turno-workspace", label: sectionLabels["turno-workspace"] });
+                  goToSection("people-workspace", false);
+                } else {
+                  setReturnSection(null);
+                }
+              }}
               className={`min-h-11 border-2 border-[#b85668] px-4 text-xs font-black uppercase ${peopleFilterOpen ? "bg-transparent text-[#c76476]" : "bg-[#b85668] text-white"}`}>
               {peopleFilterOpen ? "Nascondi persone compatibili ↑" : "Vedi persone compatibili →"}
             </button>
