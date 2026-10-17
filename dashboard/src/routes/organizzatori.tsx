@@ -2129,19 +2129,22 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           </header>
 
           <section className={`border-2 p-3 sm:p-5 ${panel}`}>
-            <label className="block text-[11px] sm:text-xs">
-              <span className="mb-1 block font-black uppercase opacity-70">Trova il tuo nome</span>
-              <div className={`flex min-h-11 items-center gap-2 border-2 px-3 ${input}`}>
-                <Search className="size-4 shrink-0 opacity-60" />
-                <input
-                  value={personalQuery}
-                  onChange={(e) => { setPersonalQuery(e.target.value); setPersonalVolunteerId(""); }}
-                  placeholder="Nome o cognome"
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:opacity-45"
-                />
-                {personalQuery ? <button type="button" onClick={() => { setPersonalQuery(""); setPersonalVolunteerId(""); }} className="text-[10px] font-black uppercase">Pulisci</button> : null}
-              </div>
-            </label>
+            {!(volunteerOnly && volunteerDeviceLinked) ? (
+                          <label className="block text-[11px] sm:text-xs">
+                            <span className="mb-1 block font-black uppercase opacity-70">Trova il tuo nome</span>
+                            <div className={`flex min-h-11 items-center gap-2 border-2 px-3 ${input}`}>
+                              <Search className="size-4 shrink-0 opacity-60" />
+                              <input
+                                value={personalQuery}
+                                onChange={(e) => { setPersonalQuery(e.target.value); setPersonalVolunteerId(""); }}
+                                placeholder="Nome o cognome"
+                                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:opacity-45"
+                              />
+                              {personalQuery ? <button type="button" onClick={() => { setPersonalQuery(""); setPersonalVolunteerId(""); }} className="text-[10px] font-black uppercase">Pulisci</button> : null}
+                            </div>
+                          </label>
+              
+                          ) : null}
 
             {personalMatches.length && !personalVolunteer ? (
               <div className={`mt-1 max-h-64 overflow-auto border-2 border-[#b85668] p-1 ${isLight ? "bg-white" : "bg-ink"}`}>
@@ -2161,23 +2164,32 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
             {personalVolunteer ? (
               <div className="mt-5">
-                <div className={`border-2 p-4 ${panelSoft}`}>
-                  <p className="text-[10px] font-black uppercase text-[#c76476]">Volontario</p>
-                  <h2 className="mt-1 text-xl font-black uppercase">{personalVolunteer.name}</h2>
-                  {personalVolunteer.group ? <p className={`mt-1 text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
-                </div>
+                {!(volunteerOnly && volunteerDeviceLinked) ? (
+                                  <div className={`border-2 p-4 ${panelSoft}`}>
+                                    <p className="text-[10px] font-black uppercase text-[#c76476]">Volontario</p>
+                                    <h2 className="mt-1 text-xl font-black uppercase">{personalVolunteer.name}</h2>
+                                    {personalVolunteer.group ? <p className={`mt-1 text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
+                                  </div>
+                ) : (
+                  <div className={`border-2 p-3 ${panelSoft}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-emerald-600">Il mio Costacciaro</p>
+                        <h2 className="text-lg font-black uppercase">{personalVolunteer.name}</h2>
+                        {personalVolunteer.group ? <p className={`text-xs ${muted}`}>{personalVolunteer.group}</p> : null}
+                      </div>
+                      <span className="border border-emerald-600 px-2 py-1 text-[10px] font-black uppercase text-emerald-600">Associato</span>
+                    </div>
+                  </div>
+                )}
 
                 {volunteerOnly ? (
                   <div className={`mt-3 border-2 p-4 ${panel}`}>
                     {volunteerDeviceLinked ? (
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-black uppercase text-emerald-600">Dispositivo associato</p>
-                          <p className="mt-1 text-sm font-bold">{personalVolunteer.name}</p>
-                          <p className={`mt-1 text-xs ${muted}`}>Da questo dispositivo aprirai direttamente il tuo profilo.</p>
-                        </div>
-                        <button type="button" onClick={unlinkVolunteerDevice} className="min-h-10 border-2 border-[#b85668] px-3 text-[10px] font-black uppercase">
-                          Scollega
+                      <div className="flex items-center justify-between gap-3">
+                        <p className={`text-xs ${muted}`}>Questo dispositivo è riconosciuto automaticamente.</p>
+                        <button type="button" onClick={unlinkVolunteerDevice} className="min-h-9 shrink-0 border px-3 text-[10px] font-black uppercase">
+                          Cambia profilo
                         </button>
                       </div>
                     ) : (
@@ -2258,6 +2270,28 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                           ) : null}
                         </div>
                       )) : <p className={`text-sm ${muted}`}>Nessun messaggio per te al momento.</p>}
+                    </div>
+
+                    <div className={`mt-4 border-t pt-4 ${isLight ? "border-ink/15" : "border-paper/15"}`}>
+                      <p className="text-[10px] font-black uppercase text-[#c76476]">Scrivi all'organizzazione</p>
+                      <textarea
+                        value={volunteerReply}
+                        onChange={(e) => setVolunteerReply(e.target.value)}
+                        placeholder="Es. Non riesco ad arrivare per il turno delle 9…"
+                        className={`mt-2 min-h-24 w-full border-2 p-3 text-sm ${input}`}
+                      />
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={sendVolunteerReply}
+                          disabled={volunteerReplyBusy || !volunteerReply.trim()}
+                          className="inline-flex min-h-10 items-center gap-2 border-2 border-[#b85668] bg-[#b85668] px-3 text-xs font-black uppercase text-white disabled:opacity-50"
+                        >
+                          <Send className="size-4" />
+                          {volunteerReplyBusy ? "Invio…" : "Invia"}
+                        </button>
+                        {volunteerReplyFeedback ? <span className={`text-xs font-bold ${volunteerReplyFeedback.includes("inviato") ? "text-emerald-600" : "text-[#c76476]"}`}>{volunteerReplyFeedback}</span> : null}
+                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -2704,7 +2738,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <div>
                 <p className="text-[10px] font-black uppercase text-[#c76476]">Comunicazioni interne</p>
                 <h2 className="text-lg font-black uppercase">Messaggi ai volontari</h2>
-                <p className={`mt-1 text-xs ${muted}`}>Invia a tutti, a una persona o a una squadra. Nel Mio Costacciaro viene registrata la lettura.</p>
+                <p className={`mt-1 text-xs ${muted}`}>Invia a tutti, a una persona o a una squadra. Letture e risposte si aggiornano automaticamente.</p>
               </div>
               <button type="button" onClick={() => setMessagesOpen(false)}
                 className="grid size-10 shrink-0 place-items-center border-2 border-[#b85668] hover:bg-[#b85668] hover:text-white"
@@ -2789,7 +2823,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                       <button type="button" onClick={() => loadDashboardMessages().then(setDashboardMessages).catch(() => {})}
                         className="border px-2 py-1 text-[10px] font-black uppercase">Aggiorna</button>
                     </div>
-                    <div className="mt-3 max-h-[520px] space-y-2 overflow-auto">
+                    <div className="mt-3 max-h-[360px] space-y-2 overflow-auto">
                       {dashboardMessages.length ? dashboardMessages.map((m) => (
                         <div key={m.id} className={`border-2 p-3 ${panel}`}>
                           <div className="flex items-start justify-between gap-2">
@@ -2807,6 +2841,30 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                           </div>
                         </div>
                       )) : <p className={`text-xs ${muted}`}>Nessun messaggio inviato.</p>}
+                    </div>
+
+                    <div className={`mt-4 border-t pt-4 ${isLight ? "border-ink/15" : "border-paper/15"}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi dai volontari</p>
+                        <span className={`text-[10px] ${muted}`}>aggiornamento automatico</span>
+                      </div>
+                      <div className="mt-2 max-h-[260px] space-y-2 overflow-auto">
+                        {volunteerInbox.length ? volunteerInbox.map((m) => (
+                          <div key={m.id} className={`border-2 p-3 ${m.readAt ? panel : "border-[#b85668]"}`}>
+                            <div className="flex items-start justify-between gap-2">
+                              <strong className="text-sm">{m.volunteerName}</strong>
+                              <span className={`text-[9px] font-black uppercase ${m.readAt ? "text-emerald-600" : "text-[#c76476]"}`}>{m.readAt ? "Letto" : "Nuovo"}</span>
+                            </div>
+                            <p className="mt-2 text-xs">{m.body}</p>
+                            {!m.readAt ? (
+                              <button type="button" onClick={() => markInboxRead(m.id)}
+                                className="mt-2 border px-2 py-1 text-[10px] font-black uppercase">
+                                Segna letto
+                              </button>
+                            ) : null}
+                          </div>
+                        )) : <p className={`text-xs ${muted}`}>Nessun messaggio ricevuto.</p>}
+                      </div>
                     </div>
                   </div>
                 </div>
