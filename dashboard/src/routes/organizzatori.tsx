@@ -2841,7 +2841,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         <header className="mb-4 border-b-2 border-[#b85668] pb-3 sm:mb-5 lg:mb-6 lg:pb-5">
           <div className="flex flex-col gap-4">
             <div className="flex min-w-0 flex-wrap items-center gap-4 sm:flex-nowrap sm:gap-6">
-              <div className="flex h-20 w-40 shrink-0 items-center justify-start sm:h-24 sm:w-52 lg:h-28 lg:w-60">
+              <div className="flex h-24 w-48 shrink-0 items-center justify-start sm:h-28 sm:w-64 lg:h-36 lg:w-80">
                 <img
                   src={costacciaroLogoDataUri}
                   style={{ filter: "brightness(0) saturate(100%) invert(26%) sepia(86%) saturate(3386%) hue-rotate(330deg) brightness(98%) contrast(93%)" }}
@@ -2850,11 +2850,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 />
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl font-black uppercase leading-tight tracking-tight sm:text-2xl lg:text-3xl xl:text-4xl">
-                  Dashboard di controllo
+                <h1 className="text-lg font-black uppercase leading-tight tracking-tight sm:text-xl lg:text-2xl xl:text-3xl">
+                  Pannello organizzatori
                 </h1>
                 <p className={`mt-1 max-w-2xl text-[10px] leading-snug sm:text-xs lg:text-sm ${muted}`}>
-                  Pannello organizzatori · Gestione volontari
+                  Gestione volontari · Costacciaro 2026
                 </p>
               </div>
             </div>
