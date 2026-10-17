@@ -1290,6 +1290,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [volunteerReply, setVolunteerReply] = useState("");
   const [volunteerReplyBusy, setVolunteerReplyBusy] = useState(false);
   const [volunteerReplyFeedback, setVolunteerReplyFeedback] = useState("");
+  const [soundAlertsEnabled, setSoundAlertsEnabled] = useState(false);
+  const lastVolunteerUnreadRef = useRef(0);
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
@@ -1594,6 +1596,24 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     };
   }, [messagesOpen, volunteerOnly, dataMode]);
 
+  function playMessageBeep() {
+    if (!soundAlertsEnabled || typeof window === "undefined") return;
+    try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextCtor) return;
+      const ctx = new AudioContextCtor();
+      const oscillator = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscillator.frequency.value = 880;
+      gain.gain.value = 0.04;
+      oscillator.connect(gain);
+      gain.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.12);
+      oscillator.onended = () => ctx.close();
+    } catch {}
+  }
+
   useEffect(() => {
     if (!volunteerOnly || !volunteerDeviceLinked) {
       setVolunteerMessages([]);
@@ -1608,11 +1628,16 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         const items = await loadVolunteerMessages(token);
         if (cancelled) return;
         const unread = items.filter((item) => !item.readAt);
+        if (unread.length > lastVolunteerUnreadRef.current) playMessageBeep();
+        lastVolunteerUnreadRef.current = unread.length;
         if (unread.length) {
           await Promise.allSettled(unread.map((item) => markVolunteerMessage(token, item.id, false)));
         }
         const refreshed = unread.length ? await loadVolunteerMessages(token) : items;
-        if (!cancelled) setVolunteerMessages(refreshed);
+        if (!cancelled) {
+          setVolunteerMessages(refreshed);
+          lastVolunteerUnreadRef.current = refreshed.filter((item) => !item.readAt).length;
+        }
       } catch {
         if (!cancelled) setVolunteerMessages([]);
       }
@@ -1625,6 +1650,46 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       window.clearInterval(timer);
     };
   }, [volunteerOnly, volunteerDeviceLinked]);
+
+  function applyMessagePreset(kind: "shift_change" | "assignment" | "confirm" | "reminder" | "important") {
+    const targetVolunteer = activeVolunteers.find((v) => v.id === messageTargetVolunteerId);
+    const targetTeam = teams.find((t) => t.id === messageTargetTeamId);
+    const firstName = targetVolunteer?.name?.split(" ")[0] || "volontario";
+
+    if (kind === "shift_change") {
+      setMessageTitle("Cambio turno");
+      setMessageBody(targetTeam
+        ? `Ciao, il tuo turno è stato aggiornato: ${targetTeam.day}, ${targetTeam.slot}, ${targetTeam.activity}, ${targetTeam.place}. Controlla Il mio Costacciaro per i dettagli aggiornati.`
+        : `Ciao ${firstName}, il tuo turno è stato aggiornato. Controlla Il mio Costacciaro per vedere data, fascia, attività e luogo aggiornati.`);
+      setMessageUrgent(true);
+      return;
+    }
+    if (kind === "assignment") {
+      setMessageTitle("Nuovo turno assegnato");
+      setMessageBody(targetTeam
+        ? `Sei stato assegnato al turno: ${targetTeam.day}, ${targetTeam.slot}, ${targetTeam.activity}, ${targetTeam.place}. Trovi tutto aggiornato nel Mio Costacciaro.`
+        : `Ciao ${firstName}, ti è stato assegnato un nuovo turno. Controlla Il mio Costacciaro per tutti i dettagli.`);
+      setMessageUrgent(true);
+      return;
+    }
+    if (kind === "confirm") {
+      setMessageTitle("Conferma disponibilità");
+      setMessageBody(`Ciao ${firstName}, puoi confermare di aver visto questa comunicazione e la tua disponibilità? Premi “Confermo di aver letto” nel Mio Costacciaro.`);
+      setMessageUrgent(true);
+      return;
+    }
+    if (kind === "reminder") {
+      setMessageTitle("Promemoria turno");
+      setMessageBody(targetTeam
+        ? `Promemoria: ${targetTeam.day}, ${targetTeam.slot}, ${targetTeam.activity}, ${targetTeam.place}. Controlla Il mio Costacciaro prima del turno.`
+        : `Promemoria: controlla Il mio Costacciaro per verificare il tuo prossimo turno e gli ultimi aggiornamenti.`);
+      setMessageUrgent(false);
+      return;
+    }
+    setMessageTitle("Comunicazione importante");
+    setMessageBody(`Ciao ${firstName}, c’è un aggiornamento importante per Costacciaro 2026. Controlla questa comunicazione e conferma la lettura.`);
+    setMessageUrgent(true);
+  }
 
   async function submitDashboardMessage() {
     if (dataMode !== "live") {
@@ -2270,7 +2335,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                         <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi</p>
                         <h3 className="text-lg font-black uppercase">Comunicazioni per te</h3>
                       </div>
-                      <MessageSquare className="size-5 text-[#c76476]" />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSoundAlertsEnabled((current) => !current)}
+                          className={`border px-2 py-1 text-[9px] font-black uppercase ${soundAlertsEnabled ? "border-emerald-600 text-emerald-600" : ""}`}
+                          title="Avvisi sonori mentre Il mio Costacciaro è aperto"
+                        >
+                          {soundAlertsEnabled ? "Suono on" : "Suono off"}
+                        </button>
+                        <MessageSquare className="size-5 text-[#c76476]" />
+                      </div>
                     </div>
 
                     <div className="mt-3 space-y-2">
@@ -2875,6 +2950,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                           </select>
                         </label>
                       ) : null}
+
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi rapidi</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <button type="button" onClick={() => applyMessagePreset("shift_change")} className="border px-2 py-1.5 text-[10px] font-black uppercase">Cambio turno</button>
+                          <button type="button" onClick={() => applyMessagePreset("assignment")} className="border px-2 py-1.5 text-[10px] font-black uppercase">Nuovo turno</button>
+                          <button type="button" onClick={() => applyMessagePreset("confirm")} className="border px-2 py-1.5 text-[10px] font-black uppercase">Conferma</button>
+                          <button type="button" onClick={() => applyMessagePreset("reminder")} className="border px-2 py-1.5 text-[10px] font-black uppercase">Promemoria</button>
+                          <button type="button" onClick={() => applyMessagePreset("important")} className="border px-2 py-1.5 text-[10px] font-black uppercase">Importante</button>
+                        </div>
+                      </div>
 
                       <label className="grid gap-1 text-xs font-bold">
                         Titolo
