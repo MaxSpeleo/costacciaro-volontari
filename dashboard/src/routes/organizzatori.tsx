@@ -9,6 +9,9 @@ import {
   CircleHelp,
   Download,
   Mail,
+  MessageSquare,
+  Send,
+  CheckCheck,
   Phone,
   Filter,
   Moon,
@@ -27,7 +30,9 @@ import {
 
 import { supabase } from "@/lib/supabase";
 import { loadOperationalDashboard,
-  loadTestVolunteerSnapshot, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard } from "@/lib/dashboard-operational";
+  loadTestVolunteerSnapshot, saveOperationalActivities, saveOperationalTeams, saveVolunteerOps, subscribeOperationalDashboard,
+  loadDashboardMessages, loadVolunteerMessages, markVolunteerMessage, sendDashboardMessage,
+  type DashboardMessageSummary, type VolunteerMessage } from "@/lib/dashboard-operational";
 
 export const Route = createFileRoute("/organizzatori")({
   head: () => ({
@@ -1268,6 +1273,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [volunteerPairBusy, setVolunteerPairBusy] = useState(false);
   const [volunteerPairError, setVolunteerPairError] = useState("");
   const [volunteerDeviceLinked, setVolunteerDeviceLinked] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [dashboardMessages, setDashboardMessages] = useState<DashboardMessageSummary[]>([]);
+  const [volunteerMessages, setVolunteerMessages] = useState<VolunteerMessage[]>([]);
+  const [messageType, setMessageType] = useState<"notice" | "direct" | "team">("notice");
+  const [messageTargetVolunteerId, setMessageTargetVolunteerId] = useState("");
+  const [messageTargetTeamId, setMessageTargetTeamId] = useState("");
+  const [messageTitle, setMessageTitle] = useState("");
+  const [messageBody, setMessageBody] = useState("");
+  const [messageUrgent, setMessageUrgent] = useState(false);
+  const [messageBusy, setMessageBusy] = useState(false);
+  const [messageError, setMessageError] = useState("");
   const [liveVolunteers, setLiveVolunteers] = useState<Volunteer[]>([]);
   const [testVolunteers, setTestVolunteers] = useState<Volunteer[]>([]);
   const openAccess = true;
@@ -1524,6 +1540,86 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setVolunteerPairEmail("");
     setVolunteerPairPhone4("");
     setVolunteerPairError("");
+  }
+
+  useEffect(() => {
+    if (!messagesOpen || volunteerOnly || dataMode !== "live") return;
+    loadDashboardMessages()
+      .then(setDashboardMessages)
+      .catch(() => setMessageError("Caricamento messaggi non riuscito."));
+  }, [messagesOpen, volunteerOnly, dataMode]);
+
+  useEffect(() => {
+    if (!volunteerOnly || !volunteerDeviceLinked) {
+      setVolunteerMessages([]);
+      return;
+    }
+    const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
+    if (!token) return;
+
+    loadVolunteerMessages(token)
+      .then(async (items) => {
+        setVolunteerMessages(items);
+        const unread = items.filter((item) => !item.readAt);
+        if (unread.length) {
+          await Promise.allSettled(unread.map((item) => markVolunteerMessage(token, item.id, false)));
+          const refreshed = await loadVolunteerMessages(token);
+          setVolunteerMessages(refreshed);
+        }
+      })
+      .catch(() => setVolunteerMessages([]));
+  }, [volunteerOnly, volunteerDeviceLinked]);
+
+  async function submitDashboardMessage() {
+    if (dataMode !== "live") {
+      setMessageError("I messaggi si inviano solo in modalità Operativo.");
+      return;
+    }
+    if (!messageTitle.trim() || !messageBody.trim()) {
+      setMessageError("Inserisci titolo e messaggio.");
+      return;
+    }
+    if (messageType === "direct" && !messageTargetVolunteerId) {
+      setMessageError("Scegli il volontario destinatario.");
+      return;
+    }
+    if (messageType === "team" && !messageTargetTeamId) {
+      setMessageError("Scegli la squadra destinataria.");
+      return;
+    }
+
+    setMessageBusy(true);
+    setMessageError("");
+    try {
+      const result = await sendDashboardMessage({
+        messageType,
+        title: messageTitle.trim(),
+        body: messageBody.trim(),
+        urgent: messageUrgent,
+        targetVolunteerId: messageType === "direct" ? messageTargetVolunteerId : undefined,
+        targetTeamId: messageType === "team" ? messageTargetTeamId : undefined,
+      });
+      setMessageTitle("");
+      setMessageBody("");
+      setMessageUrgent(false);
+      setMessageTargetVolunteerId("");
+      setMessageTargetTeamId("");
+      setFeedback(`✓ Messaggio inviato a ${result.recipient_count} destinatari.`);
+      setDashboardMessages(await loadDashboardMessages());
+    } catch {
+      setMessageError("Invio non riuscito.");
+    } finally {
+      setMessageBusy(false);
+    }
+  }
+
+  async function acknowledgeVolunteerMessage(messageId: string) {
+    const token = localStorage.getItem("costacciaro-volunteer-device-token") || "";
+    if (!token) return;
+    try {
+      await markVolunteerMessage(token, messageId, true);
+      setVolunteerMessages(await loadVolunteerMessages(token));
+    } catch {}
   }
 
   const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
