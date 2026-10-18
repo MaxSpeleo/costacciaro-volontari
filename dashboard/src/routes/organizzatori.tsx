@@ -2533,7 +2533,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         window.setTimeout(() => locateGuideTarget("staffing", 2), 100);
         return;
       }
-      if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); return; }
+      if (contextGuideStep === 2) { if (guideChoice === "staffing" && !staffingDone) return; setContextGuideStep(null); locateGuideTarget("overview", 0); return; }
       const next = contextGuideStep + 1;
       setContextGuideStep(next);
       window.setTimeout(() => locateGuideTarget(guideChoice, next), 100);
@@ -2552,7 +2552,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={nextContextStep} disabled={guideChoice === "staffing" && contextGuideStep === 1 && !staffingDone} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Chiudi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
