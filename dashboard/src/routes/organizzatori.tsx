@@ -1330,6 +1330,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [guidedMode, setGuidedMode] = useState(true);
   const [guideMenuOpen, setGuideMenuOpen] = useState(false);
+  const [guideCategory, setGuideCategory] = useState<"turni" | "persone" | "messaggi" | "altro">("turni");
   const [contextGuideStep, setContextGuideStep] = useState<number | null>(null);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
@@ -2497,20 +2498,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     return true;
   }
   function contextGuide() {
-    if (contextGuideStep === null || !guideChoice || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
+    if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
+    const noPriorities = guideChoice === "priority" && attentionIssueCount === 0;
     const instructions = contextGuideCopy[guideChoice];
     return (
-      <div role="region" aria-label="Indicazioni operative" className={`my-3 border-2 border-amber-400 p-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
-        <strong className="text-sm">Passaggio {contextGuideStep + 1} di 3 · {instructions[contextGuideStep]}</strong>
-        <p className="mt-1 text-xs">Segui il comando nella sezione aperta, poi verifica personalmente il risultato.</p>
-        <p className="mt-1 text-xs">La guida indica cosa fare: non invia, salva o conferma modifiche al posto tuo.</p>
-        <button type="button" onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="mt-2 min-h-10 border-2 border-amber-400 px-3 text-xs font-bold" title="Evidenzia la sezione pertinente, senza effettuare modifiche">◎ Evidenzia dove intervenire</button>
-        <p className="mt-1 text-xs font-semibold">Operazione selezionata: {guideChoice === "staffing" ? "Modifica turno" : guideChoice === "priority" ? "Priorità" : guideChoice === "people" ? "Gestione squadre" : guideChoice === "assign" ? "Assegnazioni suggerite" : guideChoice === "regia" ? "Regia" : guideChoice === "myturns" ? "Turni volontario" : guideChoice === "contacts" ? "Rubrica" : guideChoice === "messages" ? "Composizione messaggi" : guideChoice === "inbox" ? "Ricevuti" : guideChoice === "sent" ? "Inviati" : guideChoice === "personal" ? "Vista personale" : guideChoice === "activities" ? "Catalogo attività" : guideChoice === "sharing" ? "Condivisione" : "Preferenze"}. Il comando resta sotto il controllo dell’organizzatore.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">Indietro</button> : null}
-          <button type="button" onClick={() => { if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); } else { const next = contextGuideStep + 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); } }} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black">{contextGuideStep === 2 ? "Chiudi istruzioni" : "Avanti (controllo manuale) →"}</button>
-          <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
-        </div>
+      <div role="region" aria-label="Guida operativa" className={`my-2 border-l-4 border-amber-400 px-3 py-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
+        {noPriorities ? (
+          <>
+            <strong className="block text-sm">✓ Nessuna criticità rilevata</strong>
+            <p className="mt-1 text-xs">Nessun intervento necessario per le priorità attualmente visualizzate. Puoi scegliere un'altra operazione.</p>
+            <button type="button" onClick={() => { setContextGuideStep(null); setGuideMenuOpen(true); goToDashboardTop(); }} className="mt-2 min-h-10 border border-amber-400 px-3 text-xs font-bold">Scegli un'altra operazione →</button>
+          </>
+        ) : (
+          <>
+            <strong className="block text-sm">Passaggio {contextGuideStep + 1}/3 · {instructions[contextGuideStep]}</strong>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">◎ Mostra dove intervenire</button>
+              {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
+              <button type="button" onClick={() => { if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); } else { const next = contextGuideStep + 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); } }} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black">{contextGuideStep === 2 ? "Termina" : "Passaggio successivo →"}</button>
+              <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
+            </div>
+            <p className="mt-2 text-[11px] opacity-70">La guida non salva né invia modifiche. Prosegui dopo aver controllato il risultato.</p>
+          </>
+        )}
       </div>
     );
   }
@@ -3623,11 +3633,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
             {contextGuideStep !== null && guideChoice !== "overview" && guidedAssignmentStep === null && ["contacts", "messages", "activities", "inbox", "sent", "personal", "preferences", "sharing"].includes(guideChoice) ? contextGuide() : null}
             {guideMenuOpen ? (
-              <div className="mt-3 grid gap-2 border-t border-amber-400/50 pt-3 sm:grid-cols-2 lg:grid-cols-3">
-                <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
+              <div className="mt-3 border-t border-amber-400/50 pt-3">
+                <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Categorie operazioni">
+                  {([["turni","Turni e priorità"],["persone","Volontari"],["messaggi","Messaggi"],["altro","Altro"]] as const).map(([id,label]) => (
+                    <button type="button" key={id} aria-pressed={guideCategory === id} onClick={() => setGuideCategory(id)} className={`min-h-11 border px-2 text-xs font-bold ${guideCategory === id ? "border-amber-400 bg-amber-400 text-black" : panelSoft}`}>{label}</button>
+                  ))}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {guideCategory === "persone" ? <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
                   <strong className="block text-sm">Assegna volontari →</strong>
                   <span className={`mt-1 block text-xs ${muted}`}>Percorso completo guidato, fino alla verifica della squadra</span>
-                </button>
+                </button> : null}
                 {([
                   ["staffing","Configura un turno","Apri la modifica di fabbisogno e turno"],
                   ["priority","Risolvi posti scoperti","Apri le priorità da gestire"],
@@ -3644,12 +3660,18 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   ["sharing","Condividi informazioni","Controlla cosa e con chi condividere prima dell’invio"],
                   ["activities","Gestisci attività","Apri le attività e i sottogruppi"],
                   ["overview","Torna alla panoramica","Mostra il riepilogo principale"]
-                ] as const).map(([id,label,description]) => (
+                ] as const).filter(([id]) => (
+                  guideCategory === "turni" ? ["staffing","priority","regia","activities"].includes(id) :
+                  guideCategory === "persone" ? ["people","assign","myturns","contacts","personal"].includes(id) :
+                  guideCategory === "messaggi" ? ["messages","inbox","sent","sharing"].includes(id) :
+                  ["preferences","overview"].includes(id)
+                )).map(([id,label,description]) => (
                   <button key={id} type="button" onClick={() => guideTo(id)} className={`min-h-16 border-2 p-3 text-left ${isLight ? "border-ink/20 hover:border-amber-500" : "border-paper/20 hover:border-amber-400"}`}>
                     <strong className="block text-sm">{label} →</strong>
                     <span className={`mt-1 block text-xs ${muted}`}>{description}</span>
                   </button>
                 ))}
+                </div>
               </div>
             ) : null}
           </section>
