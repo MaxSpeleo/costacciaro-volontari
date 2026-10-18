@@ -2510,7 +2510,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
     const noPriorities = guideChoice === "priority" && attentionIssueCount === 0;
-    const targetAvailable = guideTargets[guideChoice]?.[contextGuideStep] ? Boolean(document.getElementById(guideTargets[guideChoice][contextGuideStep])) : false;
+    const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
     return (
       <div role="region" aria-label="Guida operativa" className={`my-2 border-l-4 border-amber-400 px-3 py-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
