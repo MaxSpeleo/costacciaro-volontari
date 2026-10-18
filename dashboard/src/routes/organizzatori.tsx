@@ -1338,6 +1338,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [editingTeam, setEditingTeam] = useState(false);
   const [staffingBaseline, setStaffingBaseline] = useState<number | null>(null);
   const [staffingTeamKey, setStaffingTeamKey] = useState("");
+  const [priorityTeamId, setPriorityTeamId] = useState<string | null>(null);
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
   const lastActivitiesSnapshot = useRef("");
@@ -2460,7 +2461,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   const contextGuideCopy = {
     staffing: ["Scegli data e fascia", "Apri la modifica del turno e controlla il numero di persone necessarie.", "Verifica che il fabbisogno sia corretto prima di terminare."],
-    priority: ["Esamina le priorità", "Individua un turno con posti scoperti.", "Apri il turno segnalato e verifica gli interventi necessari."],
+    priority: ["Apri il primo turno con posti scoperti", "Aggiungi volontari disponibili alla squadra, senza modificare altri turni.", "Controlla la copertura del turno selezionato."],
     people: ["Trova la squadra", "Seleziona giorno, fascia e attività.", "Controlla le persone presenti e modifica la squadra se necessario."],
     assign: ["Valuta le proposte", "Apri lo strumento per proporre assegnazioni.", "Controlla l'anteprima prima di approvare eventuali modifiche."],
     contacts: ["Cerca il volontario", "Usa la rubrica per trovare la persona.", "Apri il contatto desiderato; non inviare comunicazioni automaticamente."],
@@ -2480,7 +2481,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const guideTargets: Record<typeof guideChoice, string[]> = {
     overview: [],
     staffing: ["guide-shift", "guide-staffing-target", "guide-staffing-target"],
-    priority: ["priorities-workspace", "priorities-workspace", "priorities-workspace"],
+    priority: ["priorities-workspace", "guide-team", "guide-team"],
     people: ["guide-shift", "guide-people", "guide-team"],
     assign: ["guide-people", "guide-people", "guide-team"],
     regia: ["coverage-workspace", "coverage-workspace", "coverage-workspace"],
@@ -2511,11 +2512,33 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
-    const noPriorities = guideChoice === "priority" && attentionIssueCount === 0;
+    const noPriorities = guideChoice === "priority" && underCoveredTeams.length === 0 && contextGuideStep === 0;
+    const priorityTeam = priorityTeamId ? operationalTeams.find((team) => team.id === priorityTeamId) : null;
+    const priorityCovered = Boolean(priorityTeam && priorityTeam.memberIds.filter((id) => activeVolunteerIds.has(id)).length >= priorityTeam.target);
     const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && staffingTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && selectedTeam.target !== staffingBaseline;
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
     function nextContextStep() {
+      if (guideChoice === "priority" && contextGuideStep === 0) {
+        const affected = firstUnderCoveredTeam;
+        if (!affected) return;
+        setPriorityTeamId(affected.id);
+        setDay(affected.day);
+        setSlot(affected.slot);
+        setActivity(affected.activity);
+        setContextGuideStep(1);
+        setPeopleFilterOpen(true);
+        setMobileTab("squadra");
+        setActiveWorkspace("people-workspace");
+        window.setTimeout(() => locateGuideTarget("priority", 1), 250);
+        return;
+      }
+      if (guideChoice === "priority" && contextGuideStep === 1) {
+        if (!priorityCovered) return;
+        setContextGuideStep(2);
+        return;
+      }
+      if (guideChoice === "priority" && contextGuideStep === 2 && !priorityCovered) return;
       if (guideChoice === "staffing" && contextGuideStep === 0) {
         setStaffingBaseline(selectedTeam.target);
         setStaffingTeamKey(`${day}|${slot}|${activity}`);
@@ -2552,10 +2575,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={nextContextStep} disabled={guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
+            {guideChoice === "priority" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{priorityCovered ? "Copertura raggiunta nella vista corrente. Verifica la persistenza dei dati prima di considerare definitiva la modifica." : `Turno da coprire: ${priorityTeam?.activity || "selezione in corso"} · ${priorityTeam?.day || ""} ${priorityTeam?.slot || ""}. Assegna le persone mancanti per proseguire.`}</p> : null}
             {guideChoice === "staffing" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{staffingDone ? `Fabbisogno aggiornato nella dashboard: ${selectedTeam.target} persone. ${dataMode === "test" ? "Dato di PROVA." : "Controllare anche la sincronizzazione operativa."}` : "Modifica il campo Persone necessarie per proseguire, senza cambiare il turno selezionato. Nessun aggiornamento verificato."}</p> : null}
             <p className="mt-2 text-[11px] opacity-70">La guida non salva né invia modifiche. Prosegui dopo aver controllato il risultato.</p>
           </>
@@ -2569,6 +2593,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
     setGuideChoice(choice);
+    if (choice === "priority") setPriorityTeamId(null);
     if (choice === "staffing") { setStaffingBaseline(null); setStaffingTeamKey(""); }
     window.setTimeout(() => locateGuideTarget(choice, 0), 500);
     setHelpTopic(null);
@@ -4083,7 +4108,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
           </div>
 
-          {guideChoice === "staffing" && contextGuideStep !== null && contextGuideStep > 0 ? <div className="col-span-full">{contextGuide()}</div> : null}
+          {(guideChoice === "staffing" || guideChoice === "priority") && contextGuideStep !== null && contextGuideStep > 0 ? <div className="col-span-full">{contextGuide()}</div> : null}
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
             <div className="flex items-start justify-between gap-2">
