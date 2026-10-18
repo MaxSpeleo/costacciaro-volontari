@@ -1340,6 +1340,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [staffingBaseline, setStaffingBaseline] = useState<number | null>(null);
   const [staffingTeamKey, setStaffingTeamKey] = useState("");
   const [priorityTeamId, setPriorityTeamId] = useState<string | null>(null);
+  const [regiaOpenedTeamKey, setRegiaOpenedTeamKey] = useState<string | null>(null);
   const [peopleBaseline, setPeopleBaseline] = useState<string | null>(null);
   const [peopleTeamKey, setPeopleTeamKey] = useState("");
   const liveHydrated = useRef(false);
@@ -2472,7 +2473,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     contacts: ["Cerca il volontario", "Usa la rubrica per trovare la persona.", "Apri il contatto desiderato; non inviare comunicazioni automaticamente."],
     messages: ["Apri le comunicazioni", "Scegli a chi scrivere e componi il messaggio.", "Rileggi destinatari e testo prima dell'invio."],
     activities: ["Consulta le attività", "Individua l'attività o il sottogruppo da gestire.", "Verifica i cambiamenti prima di chiudere."],
-    regia: ["Apri la regia del turno", "Controlla turni e squadre da presidiare nella regia.", "Apri il turno interessato e verifica le assegnazioni."],
+    regia: ["Seleziona data e fascia della regia.", "Apri una delle attività visualizzate nel quadro di regia.", "Verifica la squadra del turno aperto e la sua copertura."],
     myturns: ["Apri l’elenco delle persone", "Cerca il volontario e controlla i turni assegnati.", "Verifica data, fascia e attività; per correggere torna alla gestione squadre."],
     inbox: ["Apri i messaggi ricevuti", "Leggi le comunicazioni e seleziona quelle da gestire.", "Se opportuno, segna il messaggio come letto o archivialo."],
     sent: ["Apri i messaggi inviati", "Controlla destinatari e cronologia degli invii.", "Verifica le comunicazioni prima di chiudere."],
@@ -2489,7 +2490,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     priority: ["priorities-workspace", "guide-team", "guide-team"],
     people: ["guide-shift", "guide-people", "guide-team"],
     assign: ["guide-people", "guide-people", "guide-team"],
-    regia: ["coverage-workspace", "coverage-workspace", "coverage-workspace"],
+    regia: ["guide-regia-shift", "guide-regia-activities", "guide-team"],
     myturns: ["guide-people", "guide-people", "guide-team"],
     contacts: ["organizer-contacts", "organizer-contacts", "organizer-contacts"],
     messages: ["organizer-messages", "organizer-messages", "organizer-messages"],
@@ -2521,10 +2522,25 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     const priorityTeam = priorityTeamId ? operationalTeams.find((team) => team.id === priorityTeamId) : null;
     const priorityCovered = Boolean(priorityTeam && priorityTeam.memberIds.filter((id) => activeVolunteerIds.has(id)).length >= priorityTeam.target);
     const peopleDone = guideChoice === "people" && peopleBaseline !== null && peopleTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && [...selectedTeam.memberIds].sort().join("|") !== peopleBaseline;
+    const regiaOpened = guideChoice === "regia" && regiaOpenedTeamKey !== null && regiaOpenedTeamKey === `${day}|${slot}|${activity}`;
     const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && staffingTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && selectedTeam.target !== staffingBaseline;
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
     function nextContextStep() {
+      if (guideChoice === "regia" && contextGuideStep === 0) {
+        setContextGuideStep(1);
+        window.setTimeout(() => locateGuideTarget("regia", 1), 120);
+        return;
+      }
+      if (guideChoice === "regia" && contextGuideStep === 1) {
+        if (!regiaOpened) return;
+        setContextGuideStep(2);
+        setMobileTab("squadra");
+        setActiveWorkspace("people-workspace");
+        window.setTimeout(() => locateGuideTarget("regia", 2), 200);
+        return;
+      }
+      if (guideChoice === "regia" && contextGuideStep === 2 && !regiaOpened) return;
       if (guideChoice === "assign" && contextGuideStep === 0) {
         setContextGuideStep(1);
         setMobileTab("persone");
@@ -2613,10 +2629,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "assign" && ((contextGuideStep === 1 && !proposal) || (contextGuideStep === 2 && !proposalConfirmedInGuide))) || (guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered) || (guideChoice === "people" && contextGuideStep > 0 && !peopleDone)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "regia" && contextGuideStep > 1 && !regiaOpened) || (guideChoice === "assign" && ((contextGuideStep === 1 && !proposal) || (contextGuideStep === 2 && !proposalConfirmedInGuide))) || (guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered) || (guideChoice === "people" && contextGuideStep > 0 && !peopleDone)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
+            {guideChoice === "regia" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{regiaOpened ? `Turno aperto: ${day} · ${slot} · ${activity}. Controlla i nominativi e il fabbisogno visualizzati.` : "Seleziona una scheda attività nella regia per aprire il turno da controllare."}</p> : null}
             {guideChoice === "assign" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{proposalConfirmedInGuide ? "Proposta confermata nella dashboard: controlla anche la persistenza." : proposal ? "Anteprima disponibile: verifica i nomi e conferma esplicitamente, oppure annulla." : "Premi Proponi assegnazioni per generare l'anteprima. Nessuna modifica verrà applicata automaticamente."}</p> : null}
             {guideChoice === "people" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{peopleDone ? "Composizione della squadra modificata nella dashboard. Verifica la persistenza prima dell'uso operativo." : "Aggiungi o rimuovi un componente della squadra selezionata per proseguire."}</p> : null}
             {guideChoice === "priority" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{priorityCovered ? "Copertura raggiunta nella vista corrente. Verifica la persistenza dei dati prima di considerare definitiva la modifica." : `Turno da coprire: ${priorityTeam?.activity || "selezione in corso"} · ${priorityTeam?.day || ""} ${priorityTeam?.slot || ""}. Assegna le persone mancanti per proseguire.`}</p> : null}
@@ -2635,6 +2652,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setGuideChoice(choice);
     if (choice === "assign") setProposalConfirmedInGuide(false);
     if (choice === "priority") setPriorityTeamId(null);
+    if (choice === "regia") setRegiaOpenedTeamKey(null);
     if (choice === "people") { setPeopleBaseline(null); setPeopleTeamKey(""); }
     if (choice === "staffing") { setStaffingBaseline(null); setStaffingTeamKey(""); }
     window.setTimeout(() => locateGuideTarget(choice, 0), 500);
@@ -3927,20 +3945,20 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               </div>
               <div className={`text-xs font-bold ${mutedStrong}`}>{availableUnassignedCount} disponibili non assegnati</div>
             </div>
-            <div id="guide-shift" className={`mt-3 grid gap-2 border-y py-3 sm:grid-cols-[1fr_1fr_auto] ${guidedAssignmentStep === 0 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${isLight ? "border-ink/10" : "border-paper/10"}`}>
+            <div id="guide-regia-shift" className={`mt-3 grid gap-2 border-y py-3 sm:grid-cols-[1fr_1fr_auto] ${guidedAssignmentStep === 0 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} ${isLight ? "border-ink/10" : "border-paper/10"}`}>
               <Select label="Data" value={day} onChange={(value) => { setDay(value); setFocusContext(""); }} options={["28 ottobre", "29 ottobre", "30 ottobre", "31 ottobre", "1 novembre"]} icon={<CalendarDays className="size-3.5" />} inputClass={input} />
               <Select label="Fascia" value={slot} onChange={(value) => { setSlot(value); setFocusContext(""); }} options={["Mattina", "Pomeriggio", "Sera"]} inputClass={input} />
               <div className={`self-end pb-2 text-[10px] font-bold sm:text-xs ${muted}`}>Poi scegli l’attività qui sotto ↓</div>
             </div>
 
             {guideActions(0)}
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div id="guide-regia-activities" className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {currentShiftSummary.map((item) => {
                 const targetDefined = item.target > 0;
                 const pct = targetDefined ? Math.min(100, Math.round((item.assigned / item.target) * 100)) : 0;
                 const complete = targetDefined && item.assigned >= item.target;
                 return (
-                  <button key={item.activity} type="button" onClick={() => { setActivity(item.activity); setSlot(item.slot); setMobileTab("turno"); setFocusContext(`${item.activity.toUpperCase()} — ${day} · ${item.slot}: ${complete ? "turno coperto" : `mancano ${item.target - item.assigned} persone`}. Qui puoi vedere i compatibili e gestire la squadra.`); goToSection("turno-workspace", true, "coverage-workspace"); }}
+                  <button key={item.activity} type="button" onClick={() => { if (guideChoice === "regia") setRegiaOpenedTeamKey(`${day}|${item.slot}|${item.activity}`); setActivity(item.activity); setSlot(item.slot); setMobileTab("turno"); setFocusContext(`${item.activity.toUpperCase()} — ${day} · ${item.slot}: ${complete ? "turno coperto" : `mancano ${item.target - item.assigned} persone`}. Qui puoi vedere i compatibili e gestire la squadra.`); goToSection("turno-workspace", true, "coverage-workspace"); }}
                     className="border-l-4 border-y border-r p-3 text-left transition-opacity hover:opacity-90"
                     style={activityTone(item.activity, isLight)}>
                     <div className="flex items-center justify-between gap-2">
@@ -3979,7 +3997,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                       const team = teams.find((t) => t.day === day && t.slot === s && t.activity === item);
                       const targetDefined = team ? team.target > 0 : false;
                       const short = team ? targetDefined && team.memberIds.filter((id) => activeVolunteerIds.has(id)).length < team.target : false;
-                      return <button key={s} type="button" onClick={() => { setActivity(item); setSlot(s); setMobileTab("turno"); setFocusContext(`${item.toUpperCase()} — ${day} · ${s}: ${team ? `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/${team.target} assegnati` : "turno non ancora configurato"}. Sei nella gestione esatta di questa cella.`); goToSection("turno-workspace", true, "coverage-workspace"); }}
+                      return <button key={s} type="button" onClick={() => { if (guideChoice === "regia") setRegiaOpenedTeamKey(`${day}|${s}|${item}`); setActivity(item); setSlot(s); setMobileTab("turno"); setFocusContext(`${item.toUpperCase()} — ${day} · ${s}: ${team ? `${team.memberIds.filter((id) => activeVolunteerIds.has(id)).length}/${team.target} assegnati` : "turno non ancora configurato"}. Sei nella gestione esatta di questa cella.`); goToSection("turno-workspace", true, "coverage-workspace"); }}
                         className={`border p-2 text-center font-black ${team ? "" : muted}`}
                         style={team ? activityTone(item, isLight) : undefined}>
                         <span className={`mb-0.5 block text-[8px] font-bold uppercase lg:hidden ${muted}`}>{s}</span>
@@ -4150,7 +4168,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
           </div>
 
-          {(guideChoice === "staffing" || guideChoice === "priority" || guideChoice === "people") && contextGuideStep !== null && contextGuideStep > 0 ? <div className="col-span-full">{contextGuide()}</div> : null}
+          {(guideChoice === "staffing" || guideChoice === "priority" || guideChoice === "people" || guideChoice === "regia") && contextGuideStep !== null && contextGuideStep > 1 ? <div className="col-span-full">{contextGuide()}</div> : null}
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
             <div className="flex items-start justify-between gap-2">
