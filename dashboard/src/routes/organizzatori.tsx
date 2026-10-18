@@ -1336,6 +1336,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
   const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns" | "inbox" | "sent" | "personal" | "preferences" | "sharing">("overview");
   const [editingTeam, setEditingTeam] = useState(false);
+  const [staffingBaseline, setStaffingBaseline] = useState<number | null>(null);
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
   const lastActivitiesSnapshot = useRef("");
@@ -2477,7 +2478,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   // Unico modello di guida: un percorso per operazione, con target verificato nel DOM.
   const guideTargets: Record<typeof guideChoice, string[]> = {
     overview: [],
-    staffing: ["guide-shift", "guide-team", "guide-team"],
+    staffing: ["guide-shift", "guide-staffing-target", "guide-staffing-target"],
     priority: ["priorities-workspace", "priorities-workspace", "priorities-workspace"],
     people: ["guide-shift", "guide-people", "guide-team"],
     assign: ["guide-people", "guide-people", "guide-team"],
@@ -2510,8 +2511,30 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
     const noPriorities = guideChoice === "priority" && attentionIssueCount === 0;
+    const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && selectedTeam.target !== staffingBaseline;
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
+    function nextContextStep() {
+      if (guideChoice === "staffing" && contextGuideStep === 0) {
+        setContextGuideStep(1);
+        setPeopleFilterOpen(true);
+        setMobileTab("squadra");
+        setActiveWorkspace("people-workspace");
+        setEditingTeam(true);
+        window.setTimeout(() => locateGuideTarget("staffing", 1), 250);
+        return;
+      }
+      if (guideChoice === "staffing" && contextGuideStep === 1) {
+        if (!staffingDone) return;
+        setContextGuideStep(2);
+        window.setTimeout(() => locateGuideTarget("staffing", 2), 100);
+        return;
+      }
+      if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); return; }
+      const next = contextGuideStep + 1;
+      setContextGuideStep(next);
+      window.setTimeout(() => locateGuideTarget(guideChoice, next), 100);
+    }
     return (
       <div role="region" aria-label="Guida operativa" className={`my-2 border-l-4 border-amber-400 px-3 py-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
         {noPriorities ? (
@@ -2526,10 +2549,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={() => { if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); } else { const next = contextGuideStep + 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); } }} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black">{contextGuideStep === 2 ? "Termina" : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={guideChoice === "staffing" && contextGuideStep === 1 && !staffingDone} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Chiudi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
+            {guideChoice === "staffing" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{staffingDone ? `Fabbisogno aggiornato nella dashboard: ${selectedTeam.target} persone. ${dataMode === "test" ? "Dato di PROVA." : "Controllare anche la sincronizzazione operativa."}` : "Modifica il campo Persone necessarie per proseguire. Nessun aggiornamento ancora rilevato."}</p> : null}
             <p className="mt-2 text-[11px] opacity-70">La guida non salva né invia modifiche. Prosegui dopo aver controllato il risultato.</p>
           </>
         )}
@@ -2542,6 +2566,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
     setGuideChoice(choice);
+    if (choice === "staffing") setStaffingBaseline(selectedTeam.target);
     window.setTimeout(() => locateGuideTarget(choice, 0), 500);
     setHelpTopic(null);
     setDirectoryOpen(choice === "contacts");
@@ -3912,7 +3937,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : null}
 
         <section id="turno-workspace" className={`mt-3 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} scroll-mt-4 border-2 p-3 lg:mt-4 lg:p-5 ${panel} ${mobileTab !== "turno" ? "hidden lg:block" : ""} ${activeWorkspace !== "turno-workspace" ? "hidden" : ""}`}>
-          {guideChoice === "staffing" ? contextGuide() : null}
+          {guideChoice === "staffing" && contextGuideStep === 0 ? contextGuide() : null}
 
           {focusContext ? (
             <div role="status" className={`mb-3 border-2 border-[#b85668] p-3 ${isLight ? "bg-[#b85668]/10" : "bg-[#b85668]/15"}`}>
@@ -4055,6 +4080,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
           </div>
 
+          {guideChoice === "staffing" && contextGuideStep !== null && contextGuideStep > 0 ? <div className="col-span-full">{contextGuide()}</div> : null}
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
             <div className="flex items-start justify-between gap-2">
@@ -4087,7 +4113,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <Info label="Data" value={selectedTeam.day} light={isLight} />
               <Info label="Fascia" value={selectedTeam.slot} light={isLight} />
               <Info label="Attività" value={selectedTeam.activity} light={isLight} />
-              <div><dt className={`flex items-center gap-1 text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Persone necessarie <button type="button" onClick={() => setHelpTopic("staffing")} aria-label="Spiega fabbisogno del turno"><CircleHelp className="size-3.5" /></button></dt>
+              <div id="guide-staffing-target"><dt className={`flex items-center gap-1 text-[9px] font-bold uppercase lg:text-xs ${muted}`}>Persone necessarie <button type="button" onClick={() => setHelpTopic("staffing")} aria-label="Spiega fabbisogno del turno"><CircleHelp className="size-3.5" /></button></dt>
                 <input type="number" min={0} max={99} value={selectedTeam.target} disabled={!editingTeam} onChange={(e) => updateSelectedTeam({ target: Math.max(0, Number(e.target.value) || 0) })} className={`mt-1 w-full border px-2 py-1 font-bold disabled:cursor-not-allowed disabled:opacity-65 ${input}`} />
                 <div className={`mt-1 text-[9px] ${muted}`}>0 = fabbisogno ancora da definire: non riceve proposte</div>
               </div>
