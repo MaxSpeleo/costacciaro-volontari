@@ -1339,6 +1339,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [staffingBaseline, setStaffingBaseline] = useState<number | null>(null);
   const [staffingTeamKey, setStaffingTeamKey] = useState("");
   const [priorityTeamId, setPriorityTeamId] = useState<string | null>(null);
+  const [peopleBaseline, setPeopleBaseline] = useState<string | null>(null);
+  const [peopleTeamKey, setPeopleTeamKey] = useState("");
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
   const lastActivitiesSnapshot = useRef("");
@@ -2515,10 +2517,29 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     const noPriorities = guideChoice === "priority" && underCoveredTeams.length === 0 && contextGuideStep === 0;
     const priorityTeam = priorityTeamId ? operationalTeams.find((team) => team.id === priorityTeamId) : null;
     const priorityCovered = Boolean(priorityTeam && priorityTeam.memberIds.filter((id) => activeVolunteerIds.has(id)).length >= priorityTeam.target);
+    const peopleDone = guideChoice === "people" && peopleBaseline !== null && peopleTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && [...selectedTeam.memberIds].sort().join("|") !== peopleBaseline;
     const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && staffingTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && selectedTeam.target !== staffingBaseline;
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
     function nextContextStep() {
+      if (guideChoice === "people" && contextGuideStep === 0) {
+        setPeopleBaseline([...selectedTeam.memberIds].sort().join("|"));
+        setPeopleTeamKey(`${day}|${slot}|${activity}`);
+        setContextGuideStep(1);
+        setPeopleFilterOpen(true);
+        setMobileTab("persone");
+        setActiveWorkspace("people-workspace");
+        window.setTimeout(() => locateGuideTarget("people", 1), 250);
+        return;
+      }
+      if (guideChoice === "people" && contextGuideStep === 1) {
+        if (!peopleDone) return;
+        setContextGuideStep(2);
+        setMobileTab("squadra");
+        window.setTimeout(() => locateGuideTarget("people", 2), 250);
+        return;
+      }
+      if (guideChoice === "people" && contextGuideStep === 2 && !peopleDone) return;
       if (guideChoice === "priority" && contextGuideStep === 0) {
         const affected = firstUnderCoveredTeam;
         if (!affected) return;
@@ -2575,10 +2596,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered) || (guideChoice === "people" && contextGuideStep > 0 && !peopleDone)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
+            {guideChoice === "people" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{peopleDone ? "Composizione della squadra modificata nella dashboard. Verifica la persistenza prima dell'uso operativo." : "Aggiungi o rimuovi un componente della squadra selezionata per proseguire."}</p> : null}
             {guideChoice === "priority" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{priorityCovered ? "Copertura raggiunta nella vista corrente. Verifica la persistenza dei dati prima di considerare definitiva la modifica." : `Turno da coprire: ${priorityTeam?.activity || "selezione in corso"} · ${priorityTeam?.day || ""} ${priorityTeam?.slot || ""}. Assegna le persone mancanti per proseguire.`}</p> : null}
             {guideChoice === "staffing" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{staffingDone ? `Fabbisogno aggiornato nella dashboard: ${selectedTeam.target} persone. ${dataMode === "test" ? "Dato di PROVA." : "Controllare anche la sincronizzazione operativa."}` : "Modifica il campo Persone necessarie per proseguire, senza cambiare il turno selezionato. Nessun aggiornamento verificato."}</p> : null}
             <p className="mt-2 text-[11px] opacity-70">La guida non salva né invia modifiche. Prosegui dopo aver controllato il risultato.</p>
@@ -2594,6 +2616,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setGuideMenuOpen(false);
     setGuideChoice(choice);
     if (choice === "priority") setPriorityTeamId(null);
+    if (choice === "people") { setPeopleBaseline(null); setPeopleTeamKey(""); }
     if (choice === "staffing") { setStaffingBaseline(null); setStaffingTeamKey(""); }
     window.setTimeout(() => locateGuideTarget(choice, 0), 500);
     setHelpTopic(null);
@@ -2607,7 +2630,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities" || choice === "inbox" || choice === "sent" || choice === "personal" || choice === "preferences" || choice === "sharing") {
       goToDashboardTop();
     } else {
-      navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "regia" ? "coverage-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
+      navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "regia" ? "coverage-workspace" : choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
       if (choice === "staffing") setEditingTeam(true);
       else setEditingTeam(false);
     }
@@ -4022,7 +4045,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         </section>
 
         <section id="people-workspace" className={`mt-3 max-h-[75vh] overflow-y-auto scroll-mt-20 grid gap-3 lg:mt-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(320px,.75fr)] lg:items-stretch lg:gap-5 ${activeWorkspace !== "people-workspace" ? "hidden" : ""}`}>
-          {guidedAssignmentStep === null && (guideChoice === "people" || guideChoice === "assign" || guideChoice === "myturns") ? <div className="col-span-full">{contextGuide()}</div> : null}
+          {guidedAssignmentStep === null && (guideChoice === "assign" || guideChoice === "myturns") ? <div className="col-span-full">{contextGuide()}</div> : null}
           {guidedAssignmentStep !== null && guidedAssignmentStep >= 2 ? (
             <div className={`sticky top-0 z-30 col-span-full border-2 border-amber-400 p-2 shadow-lg ${isLight ? "bg-white" : "bg-ink"}`}>
               {guideActions(guidedAssignmentStep)}
@@ -4108,7 +4131,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             </div>
           </div>
 
-          {(guideChoice === "staffing" || guideChoice === "priority") && contextGuideStep !== null && contextGuideStep > 0 ? <div className="col-span-full">{contextGuide()}</div> : null}
+          {(guideChoice === "staffing" || guideChoice === "priority" || guideChoice === "people") && contextGuideStep !== null && contextGuideStep > 0 ? <div className="col-span-full">{contextGuide()}</div> : null}
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
             <div className="flex items-start justify-between gap-2">
