@@ -1271,6 +1271,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [peopleFilterOpen, setPeopleFilterOpen] = useState(false);
   const [proposal, setProposal] = useState<{ baseline: string; changes: { teamId: string; volunteerIds: string[] }[] } | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [proposalConfirmedInGuide, setProposalConfirmedInGuide] = useState(false);
   const [personalOpen, setPersonalOpen] = useState(volunteerOnly);
   const [personalVolunteerId, setPersonalVolunteerId] = useState("");
   const [personalQuery, setPersonalQuery] = useState("");
@@ -2207,6 +2208,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   function autoSuggest() {
+    setProposalConfirmedInGuide(false);
     // Compute a cross-team preview; never modify teams before approval.
     const baseline = JSON.stringify(teams);
     const used = new Map<string, number>();
@@ -2249,6 +2251,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       return { ...team, memberIds: [...team.memberIds, ...changes.get(team.id)!.filter((id) => !team.memberIds.includes(id))] };
     }));
     setProposal(null);
+    setProposalConfirmedInGuide(true);
     setFeedback("Proposta confermata. I nominativi sono stati aggiunti senza sostituire le assegnazioni precedenti.");
   }
 
@@ -2465,7 +2468,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     staffing: ["Scegli data e fascia", "Apri la modifica del turno e controlla il numero di persone necessarie.", "Verifica che il fabbisogno sia corretto prima di terminare."],
     priority: ["Apri il primo turno con posti scoperti", "Aggiungi volontari disponibili alla squadra, senza modificare altri turni.", "Controlla la copertura del turno selezionato."],
     people: ["Trova la squadra", "Seleziona giorno, fascia e attività.", "Controlla le persone presenti e modifica la squadra se necessario."],
-    assign: ["Valuta le proposte", "Apri lo strumento per proporre assegnazioni.", "Controlla l'anteprima prima di approvare eventuali modifiche."],
+    assign: ["Apri le assegnazioni suggerite", "Genera e verifica l’anteprima senza modificare le squadre.", "Conferma i nominativi solo dopo averli controllati."],
     contacts: ["Cerca il volontario", "Usa la rubrica per trovare la persona.", "Apri il contatto desiderato; non inviare comunicazioni automaticamente."],
     messages: ["Apri le comunicazioni", "Scegli a chi scrivere e componi il messaggio.", "Rileggi destinatari e testo prima dell'invio."],
     activities: ["Consulta le attività", "Individua l'attività o il sottogruppo da gestire.", "Verifica i cambiamenti prima di chiudere."],
@@ -2522,6 +2525,20 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
     function nextContextStep() {
+      if (guideChoice === "assign" && contextGuideStep === 0) {
+        setContextGuideStep(1);
+        setMobileTab("persone");
+        setPeopleFilterOpen(true);
+        setActiveWorkspace("people-workspace");
+        window.setTimeout(() => locateGuideTarget("assign", 1), 200);
+        return;
+      }
+      if (guideChoice === "assign" && contextGuideStep === 1) {
+        if (!proposal) return;
+        setContextGuideStep(2);
+        return;
+      }
+      if (guideChoice === "assign" && contextGuideStep === 2 && !proposalConfirmedInGuide) return;
       if (guideChoice === "people" && contextGuideStep === 0) {
         setPeopleBaseline([...selectedTeam.memberIds].sort().join("|"));
         setPeopleTeamKey(`${day}|${slot}|${activity}`);
@@ -2596,10 +2613,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered) || (guideChoice === "people" && contextGuideStep > 0 && !peopleDone)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "assign" && ((contextGuideStep === 1 && !proposal) || (contextGuideStep === 2 && !proposalConfirmedInGuide))) || (guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered) || (guideChoice === "people" && contextGuideStep > 0 && !peopleDone)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
+            {guideChoice === "assign" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{proposalConfirmedInGuide ? "Proposta confermata nella dashboard: controlla anche la persistenza." : proposal ? "Anteprima disponibile: verifica i nomi e conferma esplicitamente, oppure annulla." : "Premi Proponi assegnazioni per generare l'anteprima. Nessuna modifica verrà applicata automaticamente."}</p> : null}
             {guideChoice === "people" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{peopleDone ? "Composizione della squadra modificata nella dashboard. Verifica la persistenza prima dell'uso operativo." : "Aggiungi o rimuovi un componente della squadra selezionata per proseguire."}</p> : null}
             {guideChoice === "priority" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{priorityCovered ? "Copertura raggiunta nella vista corrente. Verifica la persistenza dei dati prima di considerare definitiva la modifica." : `Turno da coprire: ${priorityTeam?.activity || "selezione in corso"} · ${priorityTeam?.day || ""} ${priorityTeam?.slot || ""}. Assegna le persone mancanti per proseguire.`}</p> : null}
             {guideChoice === "staffing" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{staffingDone ? `Fabbisogno aggiornato nella dashboard: ${selectedTeam.target} persone. ${dataMode === "test" ? "Dato di PROVA." : "Controllare anche la sincronizzazione operativa."}` : "Modifica il campo Persone necessarie per proseguire, senza cambiare il turno selezionato. Nessun aggiornamento verificato."}</p> : null}
@@ -2615,6 +2633,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
     setGuideChoice(choice);
+    if (choice === "assign") setProposalConfirmedInGuide(false);
     if (choice === "priority") setPriorityTeamId(null);
     if (choice === "people") { setPeopleBaseline(null); setPeopleTeamKey(""); }
     if (choice === "staffing") { setStaffingBaseline(null); setStaffingTeamKey(""); }
