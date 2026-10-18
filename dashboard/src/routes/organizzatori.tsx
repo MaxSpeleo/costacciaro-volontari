@@ -1337,6 +1337,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns" | "inbox" | "sent" | "personal" | "preferences" | "sharing">("overview");
   const [editingTeam, setEditingTeam] = useState(false);
   const [staffingBaseline, setStaffingBaseline] = useState<number | null>(null);
+  const [staffingTeamKey, setStaffingTeamKey] = useState("");
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
   const lastActivitiesSnapshot = useRef("");
@@ -2511,11 +2512,13 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
     const noPriorities = guideChoice === "priority" && attentionIssueCount === 0;
-    const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && selectedTeam.target !== staffingBaseline;
+    const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && staffingTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && selectedTeam.target !== staffingBaseline;
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
     function nextContextStep() {
       if (guideChoice === "staffing" && contextGuideStep === 0) {
+        setStaffingBaseline(selectedTeam.target);
+        setStaffingTeamKey(`${day}|${slot}|${activity}`);
         setContextGuideStep(1);
         setPeopleFilterOpen(true);
         setMobileTab("squadra");
@@ -2553,7 +2556,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
-            {guideChoice === "staffing" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{staffingDone ? `Fabbisogno aggiornato nella dashboard: ${selectedTeam.target} persone. ${dataMode === "test" ? "Dato di PROVA." : "Controllare anche la sincronizzazione operativa."}` : "Modifica il campo Persone necessarie per proseguire. Nessun aggiornamento ancora rilevato."}</p> : null}
+            {guideChoice === "staffing" && contextGuideStep > 0 ? <p role="status" className="mt-2 text-xs font-semibold">{staffingDone ? `Fabbisogno aggiornato nella dashboard: ${selectedTeam.target} persone. ${dataMode === "test" ? "Dato di PROVA." : "Controllare anche la sincronizzazione operativa."}` : "Modifica il campo Persone necessarie per proseguire, senza cambiare il turno selezionato. Nessun aggiornamento verificato."}</p> : null}
             <p className="mt-2 text-[11px] opacity-70">La guida non salva né invia modifiche. Prosegui dopo aver controllato il risultato.</p>
           </>
         )}
@@ -2566,7 +2569,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
     setGuideChoice(choice);
-    if (choice === "staffing") setStaffingBaseline(selectedTeam.target);
+    if (choice === "staffing") { setStaffingBaseline(null); setStaffingTeamKey(""); }
     window.setTimeout(() => locateGuideTarget(choice, 0), 500);
     setHelpTopic(null);
     setDirectoryOpen(choice === "contacts");
