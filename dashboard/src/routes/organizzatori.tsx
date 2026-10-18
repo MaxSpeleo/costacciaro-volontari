@@ -2474,13 +2474,23 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     overview: ["Panoramica", "Consulta i dati riepilogativi.", "Scegli un'altra operazione quando necessario."],
   } as const;
   // Guida semiautomatica: individua ed evidenzia un comando, senza attivarlo.
-  const guideTargets: Partial<Record<typeof guideChoice, string[]>> = {
-    staffing: ["guide-shift", "turno-workspace", "turno-workspace"],
-    priority: ["priorities-workspace", "priorities-workspace", "turno-workspace"],
+  // Unico modello di guida: un percorso per operazione, con target verificato nel DOM.
+  const guideTargets: Record<typeof guideChoice, string[]> = {
+    overview: [],
+    staffing: ["guide-shift", "guide-team", "guide-team"],
+    priority: ["priorities-workspace", "priorities-workspace", "priorities-workspace"],
     people: ["guide-shift", "guide-people", "guide-team"],
-    assign: ["guide-people", "guide-people", "guide-people"],
+    assign: ["guide-people", "guide-people", "guide-team"],
     regia: ["coverage-workspace", "coverage-workspace", "coverage-workspace"],
     myturns: ["guide-people", "guide-people", "guide-team"],
+    contacts: ["organizer-contacts", "organizer-contacts", "organizer-contacts"],
+    messages: ["organizer-messages", "organizer-messages", "organizer-messages"],
+    inbox: ["organizer-messages", "organizer-messages", "organizer-messages"],
+    sent: ["organizer-messages", "organizer-messages", "organizer-messages"],
+    activities: ["organizer-activities", "organizer-activities", "organizer-activities"],
+    personal: ["organizer-personal", "organizer-personal", "organizer-personal"],
+    preferences: ["organizer-preferences", "organizer-preferences", "organizer-preferences"],
+    sharing: ["organizer-sharing", "organizer-sharing", "organizer-sharing"],
   };
   function locateGuideTarget(choice: typeof guideChoice, step: number) {
     document.querySelectorAll("[data-organizer-guide-focus]").forEach((node) => {
@@ -2490,7 +2500,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     });
     const id = guideTargets[choice]?.[step];
     const target = id ? document.getElementById(id) : null;
-    if (!target) return false;
+    if (!target || target.closest(".hidden") || getComputedStyle(target).display === "none") return false;
     target.setAttribute("data-organizer-guide-focus", "true");
     target.style.outline = "3px solid #fbbf24";
     target.style.outlineOffset = "3px";
@@ -2500,6 +2510,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
     const noPriorities = guideChoice === "priority" && attentionIssueCount === 0;
+    const targetAvailable = guideTargets[guideChoice]?.[contextGuideStep] ? Boolean(document.getElementById(guideTargets[guideChoice][contextGuideStep])) : false;
     const instructions = contextGuideCopy[guideChoice];
     return (
       <div role="region" aria-label="Guida operativa" className={`my-2 border-l-4 border-amber-400 px-3 py-3 ${isLight ? "bg-amber-50 text-ink" : "bg-amber-400/10 text-paper"}`}>
@@ -2513,11 +2524,12 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           <>
             <strong className="block text-sm">Passaggio {contextGuideStep + 1}/3 · {instructions[contextGuideStep]}</strong>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button type="button" onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">◎ Mostra dove intervenire</button>
+              <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
               <button type="button" onClick={() => { if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); } else { const next = contextGuideStep + 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); } }} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black">{contextGuideStep === 2 ? "Termina" : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
+            {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
             <p className="mt-2 text-[11px] opacity-70">La guida non salva né invia modifiche. Prosegui dopo aver controllato il risultato.</p>
           </>
         )}
@@ -3091,7 +3103,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : null}
 
         {catalogOpen ? (
-          <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+          <section id="organizer-activities" className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
             <div className="flex items-start justify-between gap-3">
               <div><p className="text-[10px] font-black uppercase text-[#c76476]">Catalogo operativo</p><h2 className="text-lg font-black uppercase">Attività e sottogruppi</h2></div>
               <button type="button" onClick={() => setCatalogOpen(false)} className="text-xs font-black uppercase">Chiudi</button>
@@ -3125,7 +3137,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : null}
 
         {personalOpen ? (
-          <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+          <section id="organizer-personal" className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase text-[#c76476]">Area personale · DATI DI PROVA</p>
@@ -3226,7 +3238,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : null}
 
         {directoryOpen ? (
-          <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+          <section id="organizer-contacts" className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase text-[#c76476]">Contatti volontari</p>
@@ -3380,7 +3392,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         ) : null}
 
         {messagesOpen ? (
-          <section className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
+          <section id="organizer-messages" className={`mb-3 border-2 p-3 lg:p-5 ${panel}`}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase text-[#c76476]">Comunicazioni interne</p>
