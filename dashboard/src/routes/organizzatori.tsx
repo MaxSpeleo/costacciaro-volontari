@@ -1333,7 +1333,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [contextGuideStep, setContextGuideStep] = useState<number | null>(null);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
   const [guidedStartingMemberIds, setGuidedStartingMemberIds] = useState<string[]>([]);
-  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns" | "inbox" | "sent" | "personal" | "preferences">("overview");
+  const [guideChoice, setGuideChoice] = useState<"overview" | "staffing" | "priority" | "assign" | "people" | "contacts" | "messages" | "activities" | "regia" | "myturns" | "inbox" | "sent" | "personal" | "preferences" | "sharing">("overview");
   const [editingTeam, setEditingTeam] = useState(false);
   const liveHydrated = useRef(false);
   const lastTeamsSnapshot = useRef("");
@@ -2469,8 +2469,33 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     sent: ["Apri i messaggi inviati", "Controlla destinatari e cronologia degli invii.", "Verifica le comunicazioni prima di chiudere."],
     personal: ["Apri la vista personale", "Consulta i turni e le comunicazioni destinati al volontario.", "Per le modifiche organizzative torna alla gestione squadre."],
     preferences: ["Consulta le preferenze", "Controlla notifiche sonore, guida e modalità dati.", "Non cambiare PROVA/OPERATIVO senza verificare le conseguenze."],
+    sharing: ["Apri la sezione di condivisione", "Scegli il canale e controlla il contenuto.", "Condividi soltanto dopo una verifica dei destinatari."],
     overview: ["Panoramica", "Consulta i dati riepilogativi.", "Scegli un'altra operazione quando necessario."],
   } as const;
+  // Guida semiautomatica: individua ed evidenzia un comando, senza attivarlo.
+  const guideTargets: Partial<Record<typeof guideChoice, string[]>> = {
+    staffing: ["guide-shift", "turno-workspace", "turno-workspace"],
+    priority: ["priorities-workspace", "priorities-workspace", "turno-workspace"],
+    people: ["guide-shift", "guide-people", "guide-team"],
+    assign: ["guide-people", "guide-people", "guide-people"],
+    regia: ["coverage-workspace", "coverage-workspace", "coverage-workspace"],
+    myturns: ["guide-people", "guide-people", "guide-team"],
+  };
+  function locateGuideTarget(choice: typeof guideChoice, step: number) {
+    document.querySelectorAll("[data-organizer-guide-focus]").forEach((node) => {
+      (node as HTMLElement).style.outline = "";
+      (node as HTMLElement).style.outlineOffset = "";
+      node.removeAttribute("data-organizer-guide-focus");
+    });
+    const id = guideTargets[choice]?.[step];
+    const target = id ? document.getElementById(id) : null;
+    if (!target) return false;
+    target.setAttribute("data-organizer-guide-focus", "true");
+    target.style.outline = "3px solid #fbbf24";
+    target.style.outlineOffset = "3px";
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    return true;
+  }
   function contextGuide() {
     if (contextGuideStep === null || !guideChoice || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
     const instructions = contextGuideCopy[guideChoice];
@@ -2479,10 +2504,11 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         <strong className="text-sm">Passaggio {contextGuideStep + 1} di 3 · {instructions[contextGuideStep]}</strong>
         <p className="mt-1 text-xs">Segui il comando nella sezione aperta, poi verifica personalmente il risultato.</p>
         <p className="mt-1 text-xs">La guida indica cosa fare: non invia, salva o conferma modifiche al posto tuo.</p>
-        <p className="mt-1 text-xs font-semibold">Operazione selezionata: {guideChoice === "staffing" ? "Modifica turno" : guideChoice === "priority" ? "Priorità" : guideChoice === "people" ? "Gestione squadre" : guideChoice === "assign" ? "Assegnazioni suggerite" : guideChoice === "regia" ? "Regia" : guideChoice === "myturns" ? "Turni volontario" : guideChoice === "contacts" ? "Rubrica" : guideChoice === "messages" ? "Composizione messaggi" : guideChoice === "inbox" ? "Ricevuti" : guideChoice === "sent" ? "Inviati" : guideChoice === "personal" ? "Vista personale" : guideChoice === "activities" ? "Catalogo attività" : "Preferenze"}. Il comando resta sotto il controllo dell’organizzatore.</p>
+        <button type="button" onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="mt-2 min-h-10 border-2 border-amber-400 px-3 text-xs font-bold" title="Evidenzia la sezione pertinente, senza effettuare modifiche">◎ Evidenzia dove intervenire</button>
+        <p className="mt-1 text-xs font-semibold">Operazione selezionata: {guideChoice === "staffing" ? "Modifica turno" : guideChoice === "priority" ? "Priorità" : guideChoice === "people" ? "Gestione squadre" : guideChoice === "assign" ? "Assegnazioni suggerite" : guideChoice === "regia" ? "Regia" : guideChoice === "myturns" ? "Turni volontario" : guideChoice === "contacts" ? "Rubrica" : guideChoice === "messages" ? "Composizione messaggi" : guideChoice === "inbox" ? "Ricevuti" : guideChoice === "sent" ? "Inviati" : guideChoice === "personal" ? "Vista personale" : guideChoice === "activities" ? "Catalogo attività" : guideChoice === "sharing" ? "Condivisione" : "Preferenze"}. Il comando resta sotto il controllo dell’organizzatore.</p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {contextGuideStep > 0 ? <button type="button" onClick={() => setContextGuideStep(contextGuideStep - 1)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">Indietro</button> : null}
-          <button type="button" onClick={() => setContextGuideStep(contextGuideStep === 2 ? null : contextGuideStep + 1)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black">{contextGuideStep === 2 ? "Chiudi istruzioni" : "Avanti (controllo manuale) →"}</button>
+          {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border border-amber-400 px-3 text-xs font-bold">Indietro</button> : null}
+          <button type="button" onClick={() => { if (contextGuideStep === 2) { setContextGuideStep(null); locateGuideTarget("overview", 0); } else { const next = contextGuideStep + 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); } }} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black">{contextGuideStep === 2 ? "Chiudi istruzioni" : "Avanti (controllo manuale) →"}</button>
           <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
         </div>
       </div>
@@ -2494,6 +2520,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
     setGuideChoice(choice);
+    window.setTimeout(() => locateGuideTarget(choice, 0), 500);
     setHelpTopic(null);
     setDirectoryOpen(choice === "contacts");
     setMessagesOpen(choice === "messages" || choice === "inbox" || choice === "sent");
@@ -2502,7 +2529,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     if (choice === "messages") setMessagePane("compose");
     setPersonalOpen(choice === "personal");
     setCatalogOpen(choice === "activities");
-    if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities" || choice === "inbox" || choice === "sent" || choice === "personal" || choice === "preferences") {
+    if (choice === "overview" || choice === "contacts" || choice === "messages" || choice === "activities" || choice === "inbox" || choice === "sent" || choice === "personal" || choice === "preferences" || choice === "sharing") {
       goToDashboardTop();
     } else {
       navigateDashboardSection(choice === "priority" ? "priorities-workspace" : choice === "regia" ? "coverage-workspace" : choice === "people" || choice === "assign" || choice === "myturns" ? "people-workspace" : "turno-workspace");
@@ -3594,7 +3621,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                 <button type="button" onClick={() => setGuidedMode(false)} className="min-h-11 border px-2 text-xs font-bold" aria-label="Nascondi guida">Nascondi</button>
               </div>
             </div>
-            {contextGuideStep !== null && guideChoice !== "overview" && guidedAssignmentStep === null && ["contacts", "messages", "activities", "inbox", "sent", "personal", "preferences"].includes(guideChoice) ? contextGuide() : null}
+            {contextGuideStep !== null && guideChoice !== "overview" && guidedAssignmentStep === null && ["contacts", "messages", "activities", "inbox", "sent", "personal", "preferences", "sharing"].includes(guideChoice) ? contextGuide() : null}
             {guideMenuOpen ? (
               <div className="mt-3 grid gap-2 border-t border-amber-400/50 pt-3 sm:grid-cols-2 lg:grid-cols-3">
                 <button type="button" onClick={startAssignmentGuide} className="min-h-16 border-2 border-amber-400 bg-amber-400/10 p-3 text-left">
@@ -3614,6 +3641,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                   ["sent","Controlla messaggi inviati","Visualizza gli invii precedenti"],
                   ["personal","Visualizza i miei turni","Apri la vista personale del volontario"],
                   ["preferences","Preferenze e modalità dati","Controlla le impostazioni senza cambiare modalità automaticamente"],
+                  ["sharing","Condividi informazioni","Controlla cosa e con chi condividere prima dell’invio"],
                   ["activities","Gestisci attività","Apri le attività e i sottogruppi"],
                   ["overview","Torna alla panoramica","Mostra il riepilogo principale"]
                 ] as const).map(([id,label,description]) => (
