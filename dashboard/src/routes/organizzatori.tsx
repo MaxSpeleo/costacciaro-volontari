@@ -1352,17 +1352,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [guidedMode, setGuidedMode] = useState(true);
   const [guideMenuOpen, setGuideMenuOpen] = useState(false);
-  const [smartGuideUsage, setSmartGuideUsage] = useState<Record<string, number>>(() => {
-    if (typeof window === "undefined") return {};
+  const [smartGuideUsage, setSmartGuideUsage] = useState<Record<string, number>>({});
+  useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("costacciaro-smartguide-usage-v1") || "{}");
-      return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
-    } catch { return {}; }
-  });
+      const saved = JSON.parse(localStorage.getItem(`costacciaro-smartguide-usage-${dataMode}-v1`) || "{}");
+      setSmartGuideUsage(saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {});
+    } catch { setSmartGuideUsage({}); }
+  }, [dataMode]);
   function recordSmartGuideUsage(id: string) {
     setSmartGuideUsage((current) => {
       const next = { ...current, [id]: Math.min(1000, (Number(current[id]) || 0) + 1) };
-      try { localStorage.setItem("costacciaro-smartguide-usage-v1", JSON.stringify(next)); } catch {}
+      try { localStorage.setItem(`costacciaro-smartguide-usage-${dataMode}-v1`, JSON.stringify(next)); } catch {}
       return next;
     });
   }
