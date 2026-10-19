@@ -1,3 +1,4 @@
+import { focusSmartGuideTarget } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -2455,7 +2456,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         peoplePane.scrollTop = 0;
         peoplePane.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
-        document.getElementById(next === 0 ? "guide-shift" : assignmentGuide[next].focus)?.scrollIntoView({ behavior: "instant", block: "center" });
+        focusSmartGuideTarget(next === 0 ? "guide-shift" : assignmentGuide[next].focus);
       }
     }, 450);
   }
@@ -2521,19 +2522,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     sharing: ["organizer-sharing", "organizer-sharing", "organizer-sharing"],
   };
   function locateGuideTarget(choice: typeof guideChoice, step: number) {
-    document.querySelectorAll("[data-organizer-guide-focus]").forEach((node) => {
-      (node as HTMLElement).style.outline = "";
-      (node as HTMLElement).style.outlineOffset = "";
-      node.removeAttribute("data-organizer-guide-focus");
-    });
     const id = guideTargets[choice]?.[step];
-    const target = id ? document.getElementById(id) : null;
-    if (!target || target.closest(".hidden") || getComputedStyle(target).display === "none") return false;
-    target.setAttribute("data-organizer-guide-focus", "true");
-    target.style.outline = "3px solid #fbbf24";
-    target.style.outlineOffset = "3px";
-    target.scrollIntoView({ behavior: "smooth", block: "center" });
-    return true;
+    return id ? focusSmartGuideTarget(id) : false;
   }
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
