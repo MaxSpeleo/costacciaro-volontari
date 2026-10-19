@@ -1,4 +1,4 @@
-import { smartGuideContextCopy, smartGuideContextTargets, smartGuideContextAnchor } from "../lib/smartguide-context-registry";
+import { smartGuideContextCopy, smartGuideContextTargets, smartGuideContextAnchor, smartGuideContextCanAdvance } from "../lib/smartguide-context-registry";
 import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -2588,7 +2588,17 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     const staffingDone = guideChoice === "staffing" && staffingBaseline !== null && staffingTeamKey === `${day}|${slot}|${activity}` && selectedTeam.id !== "__draft__" && selectedTeam.target !== staffingBaseline;
     const targetAvailable = Boolean(guideTargets[guideChoice]?.[contextGuideStep]);
     const instructions = contextGuideCopy[guideChoice];
+    const canAdvanceContext = smartGuideContextCanAdvance(guideChoice, contextGuideStep, {
+      targetAvailable,
+      regiaOpened,
+      proposalReady: Boolean(proposal),
+      proposalConfirmed: proposalConfirmedInGuide,
+      peopleDone,
+      priorityCovered,
+      staffingDone,
+    });
     function nextContextStep() {
+      if (!canAdvanceContext) return;
       if (guideChoice === "regia" && contextGuideStep === 0) {
         setContextGuideStep(1);
         window.setTimeout(() => locateGuideTarget("regia", 1), 120);
@@ -2691,7 +2701,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
               {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
-              <button type="button" onClick={nextContextStep} disabled={(guideChoice === "regia" && contextGuideStep > 1 && !regiaOpened) || (guideChoice === "assign" && ((contextGuideStep === 1 && !proposal) || (contextGuideStep === 2 && !proposalConfirmedInGuide))) || (guideChoice === "staffing" && contextGuideStep > 0 && !staffingDone) || (guideChoice === "priority" && contextGuideStep > 0 && !priorityCovered) || (guideChoice === "people" && contextGuideStep > 0 && !peopleDone)} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
+              <button type="button" onClick={nextContextStep} disabled={!canAdvanceContext} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
             {!targetAvailable ? <p role="status" className="mt-2 text-xs">Comando non individuato in questa vista: la guida non considera il passaggio verificato.</p> : null}
