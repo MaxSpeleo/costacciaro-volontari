@@ -1249,7 +1249,7 @@ function activityTone(name: string, light: boolean) {
   return { borderColor: tone.accent, backgroundColor: light ? tone.tintLight : tone.tintDark };
 }
 
-export // Ordinamento solo di visualizzazione: non cambia ID, record o priorità operative.
+// Ordinamento solo di visualizzazione: non cambia ID, record o priorità operative.
 const volunteerNameCollator = new Intl.Collator("it", { sensitivity: "base", numeric: true });
 function volunteerAlphabeticalKey(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -1265,7 +1265,7 @@ function sortVolunteersAlphabetically<T extends { name: string }>(items: readonl
   return [...items].sort((a, b) => volunteerNameCollator.compare(volunteerAlphabeticalKey(a.name), volunteerAlphabeticalKey(b.name)));
 }
 
-function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnly?: boolean } = {}) {
+export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnly?: boolean } = {}) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dataMode, setDataMode] = useState<"test" | "live">("test");
   const [testSize, setTestSize] = useState<30 | 40 | 50>(50);
