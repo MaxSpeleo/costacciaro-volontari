@@ -202,3 +202,15 @@ export function assignmentSmartGuideCanContinue(
   if (step === 2 || step === 3) return context.resolvedMembers > 0 && context.unresolvedMembers === 0;
   return false;
 }
+
+/** Shared transition guard: never advance when the active step is incomplete. */
+export function smartGuideStepIndex(current: number | null, requested: number, count: number, canAdvance: boolean): number | null {
+  if (count < 1) return null;
+  const next = Math.max(0, Math.min(requested, count - 1));
+  if (current !== null && next > current && !canAdvance) return null;
+  return next;
+}
+
+/** A UI assignment is not independently verified as persisted. */
+export const SMARTGUIDE_SAVE_UNVERIFIED =
+  "Squadra aggiornata nella schermata. Verifica la sincronizzazione prima di considerare salvato il turno.";
