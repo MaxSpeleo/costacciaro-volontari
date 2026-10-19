@@ -1352,6 +1352,21 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [helpTopic, setHelpTopic] = useState<"welcome" | "coverage" | "priorities" | "regia" | "turn" | "people" | "team" | "suggest" | "pin" | "live" | "staffing" | null>(null);
   const [guidedMode, setGuidedMode] = useState(true);
   const [guideMenuOpen, setGuideMenuOpen] = useState(false);
+  const [smartGuideUsage, setSmartGuideUsage] = useState<Record<string, number>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = JSON.parse(localStorage.getItem("costacciaro-smartguide-usage-v1") || "{}");
+      return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+    } catch { return {}; }
+  });
+  function recordSmartGuideUsage(id: string) {
+    setSmartGuideUsage((current) => {
+      const next = { ...current, [id]: Math.min(1000, (Number(current[id]) || 0) + 1) };
+      try { localStorage.setItem("costacciaro-smartguide-usage-v1", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
+
   const [guideCategory, setGuideCategory] = useState<"turni" | "persone" | "messaggi" | "altro">("turni");
   const [contextGuideStep, setContextGuideStep] = useState<number | null>(null);
   const [guidedAssignmentStep, setGuidedAssignmentStep] = useState<number | null>(null);
@@ -2485,6 +2500,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     day, slot, activity, resolvedMembers: guideResolvedMemberIds.length, unresolvedMembers: guideUnresolvedMembers,
   });
   function startAssignmentGuide() {
+    recordSmartGuideUsage("assignment");
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
     setGuideMenuOpen(false);
     setContextGuideStep(null);
@@ -2725,6 +2741,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   function guideTo(choice: typeof guideChoice) {
+    recordSmartGuideUsage(choice);
     setGuidedAssignmentStep(null);
     setContextGuideStep(choice === "overview" ? null : 0);
     setGuideMenuOpen(false);
@@ -3861,6 +3878,26 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             {contextGuideStep !== null && guideChoice !== "overview" && guidedAssignmentStep === null && ["contacts", "messages", "activities", "inbox", "sent", "personal", "preferences", "sharing"].includes(guideChoice) ? contextGuide() : null}
             {guideMenuOpen ? (
               <div className="mt-3 border-t border-amber-400/50 pt-3">
+                <div className="mb-3 border border-amber-400/60 p-3">
+                  <strong className="block text-xs uppercase">Azioni consigliate</strong>
+                  <p className={`mt-1 text-xs ${muted}`}>Le priorità vengono prima delle abitudini. Il menu completo rimane sempre disponibile.</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {underCoveredTeams.length > 0 ? <button type="button" onClick={() => guideTo("priority")} className="min-h-10 border-2 border-amber-400 px-3 text-xs font-bold">Posti scoperti ({underCoveredTeams.length}) →</button> : null}
+                    {unreadVolunteerInboxCount > 0 ? <button type="button" onClick={() => guideTo("inbox")} className="min-h-10 border-2 border-amber-400 px-3 text-xs font-bold">Messaggi da leggere ({unreadVolunteerInboxCount}) →</button> : null}
+                    {([
+                      ["assignment","Assegna volontari"],
+                      ["people","Gestisci squadre"],
+                      ["contacts","Rubrica"],
+                      ["messages","Invia messaggio"],
+                      ["regia","Regia"],
+                      ["myturns","Turni volontario"],
+                    ] as const)
+                      .slice()
+                      .sort((a, b) => (Number(smartGuideUsage[b[0]]) || 0) - (Number(smartGuideUsage[a[0]]) || 0))
+                      .slice(0, 3)
+                      .map(([id, label]) => <button type="button" key={id} onClick={() => id === "assignment" ? startAssignmentGuide() : guideTo(id)} className="min-h-10 border px-3 text-xs font-bold">{label} →</button>)}
+                  </div>
+                </div>
                 <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Categorie operazioni">
                   {([["turni","Turni e priorità"],["persone","Volontari"],["messaggi","Messaggi"],["altro","Altro"]] as const).map(([id,label]) => (
                     <button type="button" key={id} aria-pressed={guideCategory === id} onClick={() => setGuideCategory(id)} className={`min-h-11 border px-2 text-xs font-bold ${guideCategory === id ? "border-amber-400 bg-amber-400 text-black" : panelSoft}`}>{label}</button>
