@@ -163,3 +163,24 @@ export class CostacciaroSmartGuide {
   }
   dispose() { this.stop(); }
 }
+
+/** Shared DOM spotlight for legacy and new dashboard flows.
+ * Keeps the original amber outline and centered scrolling.
+ * Returns false if the element is absent or hidden.
+ */
+export function focusSmartGuideTarget(id: string, attribute = "data-organizer-guide-focus"): boolean {
+  document.querySelectorAll("[data-organizer-guide-focus], [data-smartguide-active]").forEach((node) => {
+    const element = node as HTMLElement;
+    element.style.outline = "";
+    element.style.outlineOffset = "";
+    element.removeAttribute("data-organizer-guide-focus");
+    element.removeAttribute("data-smartguide-active");
+  });
+  const target = document.getElementById(id);
+  if (!target || !target.getClientRects().length || target.closest(".hidden")) return false;
+  target.setAttribute(attribute, "true");
+  target.style.outline = "3px solid #fbbf24";
+  target.style.outlineOffset = "3px";
+  target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  return true;
+}
