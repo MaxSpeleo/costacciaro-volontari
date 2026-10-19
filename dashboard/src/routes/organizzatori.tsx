@@ -1,5 +1,5 @@
 import { smartGuideContextCopy, smartGuideContextTargets, smartGuideContextAnchor, smartGuideContextCanAdvance, smartGuideContextTransition } from "../lib/smartguide-context-registry";
-import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex } from "../lib/costacciaro-smartguide";
+import { focusSmartGuideTarget, focusSmartGuideTargetWhenReady, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -2513,14 +2513,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setGuidedAssignmentStep(next);
     navigateDashboardSection(assignmentGuide[next].target);
     window.setTimeout(() => {
-      const peoplePane = document.getElementById("people-workspace");
-      if (next >= 2 && peoplePane) {
-        peoplePane.scrollTop = 0;
-        peoplePane.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        focusSmartGuideTarget(next === 0 ? "guide-shift" : assignmentGuide[next].focus);
-      }
-    }, 450);
+      // Same centering and highlighting policy as every other SmartGuide flow.
+      void focusSmartGuideTargetWhenReady(next === 0 ? "guide-shift" : assignmentGuide[next].focus);
+    }, 250);
   }
 
   function guideActions(step: number) {
@@ -2576,7 +2571,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const guideTargets = smartGuideContextTargets;
   function locateGuideTarget(choice: typeof guideChoice, step: number) {
     const id = smartGuideContextAnchor(choice, step);
-    return id ? focusSmartGuideTarget(id) : false;
+    return id ? void focusSmartGuideTargetWhenReady(id) : false;
   }
   function contextGuide() {
     if (contextGuideStep === null || guideChoice === "overview" || guidedAssignmentStep !== null) return null;
