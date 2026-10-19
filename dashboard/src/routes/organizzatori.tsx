@@ -1,4 +1,4 @@
-import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex, SMARTGUIDE_SAVE_UNVERIFIED } from "../lib/costacciaro-smartguide";
+import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -2474,20 +2474,26 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           ) : (
             <button type="button" disabled={!guideCanContinue} onClick={async () => {
                 setGuidedAssignmentStep(null);
-                if (dataMode !== "live" || selectedTeam.id === "__draft__") {
-                  setFeedback(SMARTGUIDE_SAVE_UNVERIFIED);
+                if (selectedTeam.id === "__draft__") {
+                  setFeedback("Nessuna squadra salvata da verificare. Seleziona un turno e assegna almeno una persona.");
                   return;
                 }
                 const expectedIds = [...selectedTeam.memberIds].sort().join("|");
                 const expectedId = selectedTeam.id;
                 setFeedback("Verifica del salvataggio in corso…");
                 try {
-                  // Allow the existing debounced writer to complete, then read the server source.
-                  await new Promise<void>((resolve) => window.setTimeout(resolve, 1100));
-                  const remote = await loadOperationalDashboard();
-                  const saved = remote.teams.find((team) => team.id === expectedId);
-                  const matched = saved && [...saved.memberIds].sort().join("|") === expectedIds;
-                  setFeedback(matched ? "✓ Squadra verificata anche nei dati salvati." : "Attenzione: salvataggio non confermato. Controlla la sincronizzazione.");
+                  // Both modes perform read-back against their own persisted data source.
+                  await new Promise<void>((resolve) => window.setTimeout(resolve, dataMode === "live" ? 1100 : 80));
+                  const savedTeams: Team[] = dataMode === "live"
+                    ? (await loadOperationalDashboard()).teams
+                    : JSON.parse(localStorage.getItem("costacciaro-test-teams") || "[]");
+                  const saved = savedTeams.find((team) => team.id === expectedId);
+                  const matched = Boolean(saved && [...saved.memberIds].sort().join("|") === expectedIds);
+                  setFeedback(matched
+                    ? dataMode === "test"
+                      ? "✓ Squadra verificata nell'archivio di prova di questo dispositivo."
+                      : "✓ Squadra verificata anche nei dati operativi salvati."
+                    : "Attenzione: salvataggio non confermato. Controlla la sincronizzazione.");
                 } catch {
                   setFeedback("Verifica del salvataggio non riuscita. Controlla la sincronizzazione.");
                 }
