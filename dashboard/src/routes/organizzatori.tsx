@@ -4174,12 +4174,12 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           {(guideChoice === "staffing" || guideChoice === "priority" || guideChoice === "people" || guideChoice === "regia") && contextGuideStep !== null && contextGuideStep > 1 ? <div className="col-span-full">{contextGuide()}</div> : null}
           <div id="guide-team" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) toggleMember(id); }}
             className={`flex flex-col border-2 ${guidedAssignmentStep === 3 ? "outline outline-4 outline-amber-400 outline-offset-4" : ""} p-3 lg:min-h-[560px] lg:h-full lg:p-5 ${panel} ${mobileTab !== "squadra" ? "hidden lg:flex" : ""}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase text-[#c76476] sm:text-xs">Squadra del turno</p>
+            <div className="flex flex-col gap-3">
+              <div className="min-w-0 border-b border-[#b85668]/35 pb-2">
+                <p className="text-xs font-black uppercase tracking-wide text-[#e58398]">Squadra del turno</p>
                 <h2 className="mt-1 text-lg font-black uppercase leading-tight lg:text-xl">{activity || selectedTeam.activity}</h2>
               </div>
-              <div className="flex shrink-0 items-stretch gap-1">
+              <div className="flex flex-wrap items-stretch gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingTeam((value) => !value)}
