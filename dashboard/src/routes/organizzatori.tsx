@@ -2416,10 +2416,12 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     { title: "Trova le persone", details: "Controlla le disponibilità nell'elenco e seleziona i volontari per la squadra.", target: "people-workspace" as const, focus: "guide-people" },
     { title: "Controlla la squadra", details: "Controlla qui a destra i nominativi assegnati e i posti ancora scoperti. Puoi terminare senza tornare all’inizio.", target: "people-workspace" as const, focus: "guide-team" },
   ];
-  const guideNewMembers = selectedTeam.memberIds.filter((id) => !guidedStartingMemberIds.includes(id));
+  const guideResolvedMemberIds = selectedTeam.memberIds.filter((id) => activeVolunteers.some((volunteer) => volunteer.id === id));
+  const guideUnresolvedMembers = selectedTeam.memberIds.length - guideResolvedMemberIds.length;
+  const guideNewMembers = guideResolvedMemberIds.filter((id) => !guidedStartingMemberIds.includes(id));
   const guideCanContinue = guidedAssignmentStep === 0 ? Boolean(day && slot)
     : guidedAssignmentStep === 1 ? Boolean(activity)
-    : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? selectedTeam.memberIds.length > 0 : false;
+    : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? guideResolvedMemberIds.length > 0 && guideUnresolvedMembers === 0 : false;
   function startAssignmentGuide() {
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
     setGuideMenuOpen(false);
@@ -2449,8 +2451,9 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         <div className="min-w-[180px] flex-1">
           <strong className="block text-sm">Passaggio {step + 1} di 4 · {assignmentGuide[step].title}</strong>
           <p className="mt-1 text-xs">{assignmentGuide[step].details}</p>
-          {step === 2 ? <p className="mt-1 text-xs font-bold">In squadra: {selectedTeam.memberIds.length} persone · Nuove aggiunte in questo percorso: {guideNewMembers.length}. Puoi anche controllare una squadra già compilata. Le persone già impegnate richiedono conferma.</p> : null}
-          {step === 3 ? <p className="mt-1 text-xs font-bold">Assegnati: {selectedTeam.memberIds.length} / {selectedTeam.target} · Posti scoperti: {Math.max(0, selectedTeam.target - selectedTeam.memberIds.length)}</p> : null}
+          {step === 2 ? <p className="mt-1 text-xs font-bold">In squadra riconosciuti: {guideResolvedMemberIds.length} persone · Nuove aggiunte in questo percorso: {guideNewMembers.length}. Puoi anche controllare una squadra già compilata. Le persone già impegnate richiedono conferma.</p> : null}
+          {guideUnresolvedMembers > 0 && step >= 2 ? <p role="alert" className="mt-1 text-xs font-bold text-amber-300">{guideUnresolvedMembers} assegnazioni di prova non corrispondono a volontari presenti nell’elenco attuale. Non saranno conteggiate come copertura: ricontrolla la squadra.</p> : null}
+          {step === 3 ? <p className="mt-1 text-xs font-bold">Assegnati verificabili: {guideResolvedMemberIds.length} / {selectedTeam.target} · Posti scoperti: {Math.max(0, selectedTeam.target - guideResolvedMemberIds.length)}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={step === 0} onClick={() => navigateAssignmentGuide(step - 1)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">Indietro</button>
@@ -4150,7 +4153,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                         <div className="truncate text-xs font-bold lg:text-sm">
                           {v.name}<span className={`font-normal ${muted}`}> · {v.group}</span>
                         </div>
-                        <span className={`mt-1 inline-block text-[9px] font-black uppercase ${status === "OCCUPATO IN QUESTO ORARIO" ? "text-[#c76476]" : mutedStrong}`}>{status}</span>
+                        <span className={`mt-1 inline-flex rounded-sm border px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${status === "OCCUPATO IN QUESTO ORARIO" ? "border-rose-400 text-rose-300" : status === "GIÀ ASSEGNATO QUI" ? "border-fuchsia-400 text-fuchsia-300" : status === "IMPEGNATO IN ALTRA FASCIA" ? "border-amber-400 text-amber-300" : "border-emerald-400 text-emerald-300"}`}>{status}</span>
                         <div className={`mt-0.5 line-clamp-2 text-[10px] leading-snug lg:text-xs ${muted}`}>
                           {v.days.join(", ")} · {v.slots.join(", ")} · {v.skills.slice(0, 2).join(" · ")}
                         </div>
