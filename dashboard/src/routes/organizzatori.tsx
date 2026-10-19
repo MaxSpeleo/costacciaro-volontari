@@ -1249,7 +1249,23 @@ function activityTone(name: string, light: boolean) {
   return { borderColor: tone.accent, backgroundColor: light ? tone.tintLight : tone.tintDark };
 }
 
-export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnly?: boolean } = {}) {
+export // Ordinamento solo di visualizzazione: non cambia ID, record o priorità operative.
+const volunteerNameCollator = new Intl.Collator("it", { sensitivity: "base", numeric: true });
+function volunteerAlphabeticalKey(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return name.trim();
+  // I nomi sono attualmente memorizzati come stringa unica "Nome Cognome".
+  // Mantieni unite le particelle più comuni quando precedono il cognome.
+  let start = parts.length - 1;
+  const particles = new Set(["de", "del", "della", "delle", "di", "da", "dal", "dei", "degli", "van", "von", "der", "la", "le", "lo"]);
+  while (start > 1 && particles.has(parts[start - 1].toLocaleLowerCase("it"))) start--;
+  return parts.slice(start).join(" ") + " " + parts.slice(0, start).join(" ");
+}
+function sortVolunteersAlphabetically<T extends { name: string }>(items: readonly T[]): T[] {
+  return [...items].sort((a, b) => volunteerNameCollator.compare(volunteerAlphabeticalKey(a.name), volunteerAlphabeticalKey(b.name)));
+}
+
+function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnly?: boolean } = {}) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dataMode, setDataMode] = useState<"test" | "live">("test");
   const [testSize, setTestSize] = useState<30 | 40 | 50>(50);
@@ -1941,7 +1957,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     if (inboxArchiveOpen) loadVolunteerInboxMessagesV2(true).then(setArchivedVolunteerInbox).catch(() => {});
   }, [messagesOpen, sentArchiveOpen, inboxArchiveOpen, dataMode, volunteerOnly]);
 
-  const activeVolunteers = dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers;
+  const activeVolunteers = sortVolunteersAlphabetically(dataMode === "test" ? (testVolunteers.length ? testVolunteers : demoVolunteers.slice(0, testSize)) : liveVolunteers);
   const messageVolunteerMatches = useMemo(() => {
     const q = messageTargetQuery.trim().toLowerCase();
     if (!q) return activeVolunteers.slice(0, 8);
