@@ -1299,6 +1299,10 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   const [volunteerDeviceLinked, setVolunteerDeviceLinked] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
   const [dashboardMessages, setDashboardMessages] = useState<DashboardMessageSummary[]>([]);
+  const [testSentMessages, setTestSentMessages] = useState<Array<{ id: string; title: string; body: string; recipient: string; urgent: boolean }>>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("costacciaro-test-sent-messages") || "[]"); } catch { return []; }
+  });
   const [volunteerMessages, setVolunteerMessages] = useState<VolunteerMessage[]>([]);
   const [messageType, setMessageType] = useState<"notice" | "direct" | "team">("notice");
   const [messageTargetVolunteerId, setMessageTargetVolunteerId] = useState("");
@@ -1849,8 +1853,40 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
   }
 
   async function submitDashboardMessage() {
-    if (dataMode !== "live") {
-      setMessageError("I messaggi si inviano solo in modalità Operativo.");
+    if (dataMode === "test") {
+      if (!messageTitle.trim() || !messageBody.trim()) {
+        setMessageError("Inserisci titolo e messaggio.");
+        return;
+      }
+      if (messageType === "direct" && !messageTargetVolunteerId) {
+        setMessageError("Scegli il volontario destinatario.");
+        return;
+      }
+      if (messageType === "team" && !messageTargetTeamId) {
+        setMessageError("Scegli la squadra destinataria.");
+        return;
+      }
+      const recipient = messageType === "direct"
+        ? activeVolunteers.find((v) => v.id === messageTargetVolunteerId)?.name || "Volontario"
+        : messageType === "team"
+          ? teams.find((team) => team.id === messageTargetTeamId)?.name || "Squadra"
+          : "Tutti i volontari (simulazione)";
+      const entry = { id: crypto.randomUUID(), title: messageTitle.trim(), body: messageBody.trim(), recipient, urgent: messageUrgent };
+      try {
+        const saved = [entry, ...testSentMessages];
+        localStorage.setItem("costacciaro-test-sent-messages", JSON.stringify(saved));
+        setTestSentMessages(saved);
+        setMessageTitle("");
+        setMessageBody("");
+        setMessageUrgent(false);
+        setMessageTargetVolunteerId("");
+        setMessageTargetQuery("");
+        setMessageTargetTeamId("");
+        setMessageError("");
+        setFeedback("✓ Messaggio salvato nella simulazione TEST. Nessun messaggio reale inviato.");
+      } catch {
+        setMessageError("Impossibile salvare il messaggio di prova sul dispositivo.");
+      }
       return;
     }
     if (!messageTitle.trim() || !messageBody.trim()) {
@@ -3709,6 +3745,22 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
                 {messagePane === "sent" ? (
                   <div className={`mt-3 border-2 p-3 ${panelSoft}`}>
+                    {dataMode === "test" ? (
+                      <div className="mb-3 border border-amber-400 p-3 text-xs">
+                        <strong>SIMULAZIONE TEST — nessun messaggio inviato a persone reali.</strong>
+                        <p className="mt-1">I messaggi di prova sono conservati in questo browser.</p>
+                        <div className="mt-2 space-y-2">
+                          {testSentMessages.map((message) => (
+                            <div key={message.id} className="border p-2">
+                              <strong className="block">{message.title}</strong>
+                              <span className="block">A: {message.recipient}{message.urgent ? " · Conferma richiesta (simulata)" : ""}</span>
+                              <p>{message.body}</p>
+                            </div>
+                          ))}
+                          {!testSentMessages.length ? <p>Ancora nessun messaggio di prova.</p> : null}
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-[10px] font-black uppercase text-[#c76476]">Messaggi inviati</p>
                       <button type="button" onClick={() => setSentArchiveOpen((v) => !v)} className="border px-2 py-1 text-[9px] font-black uppercase">
