@@ -27,3 +27,15 @@ Per collaudare una Preview protetta occorrono URL e sessione di test autorizzati
 **Non verificati da questa prima suite:** assegnazione persistente dopo riapertura, ricezione messaggi, backend operativo, ruoli, confronto visuale, integrazione email/WhatsApp. Non segnare SUPERATO per nessuna di queste aree finché mancano test specifici con read-back indipendente.
 
 Non attivare workflow GitHub Actions o browser a consumo senza verificare prima i limiti del servizio e l'autorizzazione ZERO-CREDITS. Lo sviluppo resta sul ramo WORKING.
+
+## Test logici senza browser (Node.js 22+)
+
+Dalla cartella `dashboard/` eseguire:
+
+```bash
+node --experimental-strip-types --test tests/unit/smartguide.test.mjs
+```
+
+I test unitari verificano anche casi negativi e limiti del percorso di assegnazione. La loro esecuzione **non dimostra** che la dashboard nel browser funzioni o che i dati vengano salvati sul server.
+
+Per evitare falsi positivi, non usare il successo della build Vercel come risultato dei test Playwright: sono controlli distinti.
