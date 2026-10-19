@@ -56,3 +56,17 @@ export function smartGuideContextCanAdvance(
   if (choice === "people" && step > 0 && !state.peopleDone) return false;
   return true;
 }
+
+/** One navigation policy for all contextual guides. */
+export function smartGuideContextTransition(
+  choice: SmartGuideContextChoice,
+  current: number,
+  direction: "next" | "back",
+  allowed: boolean,
+): number | null {
+  const count = smartGuideContextCopy[choice].length;
+  if (!Number.isInteger(current) || current < 0 || current >= count) return null;
+  if (direction === "back") return Math.max(0, current - 1);
+  if (!allowed) return current;
+  return current + 1 < count ? current + 1 : null;
+}
