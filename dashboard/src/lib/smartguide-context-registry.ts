@@ -39,3 +39,19 @@ export const smartGuideContextTargets: Record<SmartGuideContextChoice, string[]>
 export function smartGuideContextAnchor(choice: SmartGuideContextChoice, step: number): string | null {
   return smartGuideContextTargets[choice]?.[step] || null;
 }
+
+/** Shared contextual-guide progression guard. A missing target or unmet prerequisite blocks advancement. */
+export function smartGuideContextCanAdvance(
+  choice: SmartGuideContextChoice,
+  step: number,
+  state: { targetAvailable: boolean; regiaOpened: boolean; proposalReady: boolean; proposalConfirmed: boolean; peopleDone: boolean; priorityCovered: boolean; staffingDone: boolean },
+): boolean {
+  if (!Number.isInteger(step) || step < 0 || step >= smartGuideContextCopy[choice].length || !state.targetAvailable) return false;
+  if (choice === "regia" && step > 1 && !state.regiaOpened) return false;
+  if (choice === "assign" && step === 1 && !state.proposalReady) return false;
+  if (choice === "assign" && step === 2 && !state.proposalConfirmed) return false;
+  if (choice === "staffing" && step > 0 && !state.staffingDone) return false;
+  if (choice === "priority" && step > 0 && !state.priorityCovered) return false;
+  if (choice === "people" && step > 0 && !state.peopleDone) return false;
+  return true;
+}
