@@ -1,4 +1,4 @@
-import { smartGuideContextCopy, smartGuideContextTargets, smartGuideContextAnchor, smartGuideContextCanAdvance } from "../lib/smartguide-context-registry";
+import { smartGuideContextCopy, smartGuideContextTargets, smartGuideContextAnchor, smartGuideContextCanAdvance, smartGuideContextTransition } from "../lib/smartguide-context-registry";
 import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -2683,8 +2683,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         window.setTimeout(() => locateGuideTarget("staffing", 2), 100);
         return;
       }
-      if (contextGuideStep === 2) { if (guideChoice === "staffing" && !staffingDone) return; setContextGuideStep(null); locateGuideTarget("overview", 0); return; }
-      const next = contextGuideStep + 1;
+      const next = smartGuideContextTransition(guideChoice, contextGuideStep, "next", canAdvanceContext);
+      if (next === null) { setContextGuideStep(null); locateGuideTarget("overview", 0); return; }
       setContextGuideStep(next);
       window.setTimeout(() => locateGuideTarget(guideChoice, next), 100);
     }
@@ -2701,7 +2701,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <strong className="block text-sm">Passaggio {contextGuideStep + 1}/3 · {instructions[contextGuideStep]}</strong>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <button type="button" disabled={!targetAvailable} onClick={() => locateGuideTarget(guideChoice, contextGuideStep)} className="min-h-10 border border-amber-400 px-3 text-xs font-bold disabled:opacity-40">◎ Mostra dove intervenire</button>
-              {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = contextGuideStep - 1; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
+              {contextGuideStep > 0 ? <button type="button" onClick={() => { const next = smartGuideContextTransition(guideChoice, contextGuideStep, "back", true); if (next === null) return; setContextGuideStep(next); window.setTimeout(() => locateGuideTarget(guideChoice, next), 80); }} className="min-h-10 border px-3 text-xs">Indietro</button> : null}
               <button type="button" onClick={nextContextStep} disabled={!canAdvanceContext} className="min-h-10 bg-amber-400 px-3 text-xs font-bold text-black disabled:opacity-40">{contextGuideStep === 2 ? (guideChoice === "staffing" ? "Concludi verifica" : "Termina guida") : "Passaggio successivo →"}</button>
               <button type="button" onClick={() => setContextGuideStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
             </div>
