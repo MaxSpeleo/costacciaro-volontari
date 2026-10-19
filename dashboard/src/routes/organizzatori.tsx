@@ -2193,8 +2193,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
       return;
     }
     const conflict = teams.find((team) => team.id !== selectedTeam.id && team.day === day && team.slot === slot && team.memberIds.includes(id));
-    if (conflict && !window.confirm(`${personName} è già assegnato a "${conflict.name}" nello stesso orario. Vuoi spostarlo qui?`)) {
-      setFeedback(`⚠ Operazione annullata: ${personName} resta in ${conflict.name}`);
+    if (conflict && !window.confirm(`ATTENZIONE: VOLONTARIO GIÀ IMPEGNATO\n\n${personName} ha già un turno il ${conflict.day}, fascia ${conflict.slot}, per ${conflict.activity}.\n\nNon può essere assegnato contemporaneamente a due attività.\n\nPremi ANNULLA per lasciarlo nel turno attuale (scelta consigliata).\nPremi OK soltanto se vuoi SPOSTARLO: verrà rimosso dal turno ${conflict.activity} e assegnato a ${selectedTeam.activity}.`)) {
+      setFeedback(`${personName} non aggiunto: è già impegnato in ${conflict.activity} · ${conflict.day} · ${conflict.slot}. Nessuna assegnazione modificata.`);
       return;
     }
     setTeams((current) => {
