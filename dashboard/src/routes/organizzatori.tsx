@@ -1,4 +1,4 @@
-import { focusSmartGuideTarget } from "../lib/costacciaro-smartguide";
+import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -2427,18 +2427,13 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     navigateDashboardSection(id);
   }
 
-  const assignmentGuide = [
-    { title: "Controlla giorno e fascia", details: "Usa i due campi evidenziati. Dopo aver verificato le scelte, premi Continua.", target: "turno-workspace" as const, focus: "guide-date" },
-    { title: "Scegli l'attività", details: "Seleziona l'attività nel menu evidenziato; poi premi Continua.", target: "people-workspace" as const, focus: "guide-activity" },
-    { title: "Trova le persone", details: "Controlla le disponibilità nell'elenco e seleziona i volontari per la squadra.", target: "people-workspace" as const, focus: "guide-people" },
-    { title: "Controlla la squadra", details: "Controlla qui a destra i nominativi assegnati e i posti ancora scoperti. Puoi terminare senza tornare all’inizio.", target: "people-workspace" as const, focus: "guide-team" },
-  ];
+  const assignmentGuide = assignmentSmartGuideSteps;
   const guideResolvedMemberIds = selectedTeam.memberIds.filter((id) => activeVolunteers.some((volunteer) => volunteer.id === id));
   const guideUnresolvedMembers = selectedTeam.memberIds.length - guideResolvedMemberIds.length;
   const guideNewMembers = guideResolvedMemberIds.filter((id) => !guidedStartingMemberIds.includes(id));
-  const guideCanContinue = guidedAssignmentStep === 0 ? Boolean(day && slot)
-    : guidedAssignmentStep === 1 ? Boolean(activity)
-    : guidedAssignmentStep === 2 || guidedAssignmentStep === 3 ? guideResolvedMemberIds.length > 0 && guideUnresolvedMembers === 0 : false;
+  const guideCanContinue = assignmentSmartGuideCanContinue(guidedAssignmentStep, {
+    day, slot, activity, resolvedMembers: guideResolvedMemberIds.length, unresolvedMembers: guideUnresolvedMembers,
+  });
   function startAssignmentGuide() {
     setGuidedStartingMemberIds([...selectedTeam.memberIds]);
     setGuideMenuOpen(false);
