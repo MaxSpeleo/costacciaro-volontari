@@ -184,3 +184,21 @@ export function focusSmartGuideTarget(id: string, attribute = "data-organizer-gu
   target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
   return true;
 }
+
+/** Canonical assignment walkthrough. One source of copy, targets and completion rules. */
+export const assignmentSmartGuideSteps = [
+  { id: "shift", title: "Controlla giorno e fascia", details: "Usa i due campi evidenziati. Dopo aver verificato le scelte, premi Continua.", target: "turno-workspace", focus: "guide-shift" },
+  { id: "activity", title: "Scegli l'attività", details: "Seleziona l'attività nel menu evidenziato; poi premi Continua.", target: "people-workspace", focus: "guide-activity" },
+  { id: "people", title: "Trova le persone", details: "Controlla le disponibilità nell'elenco e seleziona i volontari per la squadra.", target: "people-workspace", focus: "guide-people" },
+  { id: "review", title: "Controlla la squadra", details: "Controlla qui a destra i nominativi assegnati e i posti ancora scoperti. Puoi terminare senza tornare all’inizio.", target: "people-workspace", focus: "guide-team" },
+] as const;
+
+export function assignmentSmartGuideCanContinue(
+  step: number | null,
+  context: { day: string; slot: string; activity: string; resolvedMembers: number; unresolvedMembers: number },
+): boolean {
+  if (step === 0) return Boolean(context.day && context.slot);
+  if (step === 1) return Boolean(context.activity);
+  if (step === 2 || step === 3) return context.resolvedMembers > 0 && context.unresolvedMembers === 0;
+  return false;
+}
