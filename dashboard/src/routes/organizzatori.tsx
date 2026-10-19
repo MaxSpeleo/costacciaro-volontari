@@ -2037,7 +2037,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
 
   const macroActivities = activities.filter((item) => !item.includes(" — "));
 
-  const directoryVolunteers = dataMode === "test" ? [...activeVolunteers, testVolunteer] : activeVolunteers;
+  const directoryVolunteers = sortVolunteersAlphabetically(dataMode === "test" ? [...activeVolunteers, testVolunteer] : activeVolunteers);
   const filteredDirectoryVolunteers = directoryVolunteers.filter((v) => {
     const q = directoryQuery.trim().toLocaleLowerCase("it");
     if (!q) return true;
@@ -2243,7 +2243,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
         return preferred && v.days.includes(team.day) && v.slots.includes(team.slot)
           && !occupied.has(team.day + "|" + team.slot + "|" + v.id)
           && (used.get(v.id) ?? 0) < 3;
-      }).sort((a,b) => (used.get(a.id) ?? 0) - (used.get(b.id) ?? 0) || b.priority - a.priority);
+      }).sort((a,b) => (used.get(a.id) ?? 0) - (used.get(b.id) ?? 0) || b.priority - a.priority || volunteerNameCollator.compare(volunteerAlphabeticalKey(a.name), volunteerAlphabeticalKey(b.name)));
       const volunteerIds = choices.slice(0, needed).map((v) => v.id);
       volunteerIds.forEach((id) => {
         used.set(id, (used.get(id) ?? 0) + 1);
