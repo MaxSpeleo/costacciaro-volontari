@@ -214,3 +214,20 @@ export function smartGuideStepIndex(current: number | null, requested: number, c
 /** A UI assignment is not independently verified as persisted. */
 export const SMARTGUIDE_SAVE_UNVERIFIED =
   "Squadra aggiornata nella schermata. Verifica la sincronizzazione prima di considerare salvato il turno.";
+
+/** Wait for React to reveal a guide target after opening its panel. No click or data mutation. */
+let latestSmartGuideFocusRequest = 0;
+export async function focusSmartGuideTargetWhenReady(
+  id: string,
+  options: { attempts?: number; intervalMs?: number } = {},
+): Promise<boolean> {
+  const request = ++latestSmartGuideFocusRequest;
+  const attempts = options.attempts ?? 12;
+  const intervalMs = options.intervalMs ?? 100;
+  for (let i = 0; i < attempts; i++) {
+    if (request !== latestSmartGuideFocusRequest) return false;
+    if (focusSmartGuideTarget(id)) return true;
+    await new Promise<void>(resolve => window.setTimeout(resolve, intervalMs));
+  }
+  return false;
+}
