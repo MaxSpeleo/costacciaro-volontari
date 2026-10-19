@@ -1834,6 +1834,20 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     setMessageUrgent(true);
   }
 
+  function composeDirectMessageFromDirectory(volunteer: Volunteer) {
+    setMessageType("direct");
+    setMessageTargetVolunteerId(volunteer.id);
+    setMessageTargetQuery(volunteer.name);
+    setMessageTargetTeamId("");
+    setMessageTitle("");
+    setMessageBody("");
+    setMessageError("");
+    setMessagePane("compose");
+    setDirectoryOpen(false);
+    setMessagesOpen(true);
+    requestAnimationFrame(goToDashboardTop);
+  }
+
   async function submitDashboardMessage() {
     if (dataMode !== "live") {
       setMessageError("I messaggi si inviano solo in modalità Operativo.");
@@ -3384,7 +3398,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase text-[#c76476]">Contatti volontari</p>
-                <h2 className="text-lg font-black uppercase">Telefono, WhatsApp ed email</h2>
+                <h2 className="text-lg font-black uppercase">Telefono, WhatsApp, email e messaggi interni</h2>
               </div>
               <button
                 type="button"
@@ -3461,6 +3475,13 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
                         >
                           <Mail className="size-3.5" /> Email
                         </a>
+                        <button type="button"
+                          onClick={() => composeDirectMessageFromDirectory(v)}
+                          className="inline-flex min-h-9 items-center gap-1 border border-[#b85668] px-2 font-bold hover:bg-[#b85668] hover:text-white"
+                          aria-label={`Scrivi un messaggio interno a ${v.name}`}
+                        >
+                          <MessageSquare className="size-3.5" /> Messaggio interno
+                        </button>
                       </span>
                       <span className={`mt-2 block text-[10px] ${muted}`}>
                         {v.phone || "Telefono non disponibile"}{v.email ? ` · ${v.email}` : ""}
