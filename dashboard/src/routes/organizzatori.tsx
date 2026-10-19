@@ -2590,6 +2590,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     const instructions = contextGuideCopy[guideChoice];
     const canAdvanceContext = smartGuideContextCanAdvance(guideChoice, contextGuideStep, {
       targetAvailable,
+      priorityAvailable: Boolean(firstUnderCoveredTeam),
       regiaOpened,
       proposalReady: Boolean(proposal),
       proposalConfirmed: proposalConfirmedInGuide,
