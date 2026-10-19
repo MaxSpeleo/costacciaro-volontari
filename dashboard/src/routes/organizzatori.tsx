@@ -1,4 +1,4 @@
-import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue } from "../lib/costacciaro-smartguide";
+import { focusSmartGuideTarget, assignmentSmartGuideSteps, assignmentSmartGuideCanContinue, smartGuideStepIndex, SMARTGUIDE_SAVE_UNVERIFIED } from "../lib/costacciaro-smartguide";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -2441,8 +2441,8 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
     navigateAssignmentGuide(0);
   }
   function navigateAssignmentGuide(step: number) {
-    if (guidedAssignmentStep !== null && step > guidedAssignmentStep && !guideCanContinue) return;
-    const next = Math.max(0, Math.min(step, assignmentGuide.length - 1));
+    const next = smartGuideStepIndex(guidedAssignmentStep, step, assignmentGuide.length, guideCanContinue);
+    if (next === null) return;
     setGuidedAssignmentStep(next);
     navigateDashboardSection(assignmentGuide[next].target);
     window.setTimeout(() => {
@@ -2472,7 +2472,7 @@ export function OrganizzatoriDashboard({ volunteerOnly = false }: { volunteerOnl
           {step < 3 ? (
             <button type="button" disabled={!guideCanContinue} onClick={() => navigateAssignmentGuide(step + 1)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black disabled:opacity-40">Continua →</button>
           ) : (
-            <button type="button" disabled={!guideCanContinue} onClick={() => setGuidedAssignmentStep(null)} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black disabled:opacity-40">Termina guida</button>
+            <button type="button" disabled={!guideCanContinue} onClick={() => { setFeedback(SMARTGUIDE_SAVE_UNVERIFIED); setGuidedAssignmentStep(null); }} className="min-h-10 bg-amber-400 px-4 text-xs font-black text-black disabled:opacity-40">Termina guida</button>
           )}
           <button type="button" onClick={() => setGuidedAssignmentStep(null)} className="min-h-10 px-2 text-xs underline">Esci</button>
         </div>
